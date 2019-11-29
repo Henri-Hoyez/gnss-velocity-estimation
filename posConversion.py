@@ -39,7 +39,9 @@ def velocityEstimation(positionFile):
     velocityXmean=[]
     velocityYmean=[]
     velocityZmean=[]
-
+    posX=[]
+    posY=[]
+    posZ=[]
     #Ajout du temps dans le tableau des positions
     for i in range(len(data)):
         positionTime.append([data[i],time[i]])
@@ -53,18 +55,37 @@ def velocityEstimation(positionFile):
             velocityX.append((float(positionTime[j+1][0][0])-float(positionTime[j][0][0]))/(float(positionTime[j+1][1])-float(positionTime[j][1])))
             velocityY.append((float(positionTime[j+1][0][1])-float(positionTime[j][0][1]))/(float(positionTime[j+1][1])-float(positionTime[j][1])))
             velocityZ.append((float(positionTime[j+1][0][2])-float(positionTime[j][0][2]))/(float(positionTime[j+1][1])-float(positionTime[j][1])))
+
+        posX.append(float(positionTime[i][0][0]))
+        posY.append(float(positionTime[i][0][1]))
+        posZ.append(float(positionTime[i][0][2]))
+
         velocityXmean.append(sum(velocityX)/len(velocityX))
         velocityYmean.append(sum(velocityY)/len(velocityY))
         velocityZmean.append(sum(velocityZ)/len(velocityZ))
+
         print(velocityXmean[-1])
     for i in range(len(velocityXmean)):
         velocityNorm.append(math.sqrt(velocityXmean[i]**2+velocityYmean[i]**2+velocityZmean[i]**2)*3.6)
     time2=[]
     for i in range(len(data)-windowSize):
         time2.append(i)
+
+    print(len(posX))
+    # plt.subplot(3,1,1)
+    # plt.plot(time2,velocityXmean)
+    # plt.subplot(3,1,2)
+    # plt.plot(time2,velocityYmean)
+    # plt.subplot(3,1,3)
+    # plt.plot(time2,velocityZmean)
+    
+    # plt.subplot(2,1,1)
+    # plt.plot(posX,posY)
+    
+    # plt.subplot(2,1,2)
     plt.plot(time2,velocityNorm)
     plt.grid()
     plt.show()
 
 
-velocityEstimation("forest_env_matin.pos")
+velocityEstimation("autoroute_apres_midi.pos")
