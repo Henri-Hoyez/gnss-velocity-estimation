@@ -1,4 +1,6 @@
 import numpy as np
+import datetime
+
 
 class Satellite:
 
@@ -20,6 +22,17 @@ class Satellite:
         self.omega_dot_ascension = omega_dot_ascension
         self.i0 = i0
         self.i_dot = i_dot
+
+        self.name = None
+        self.ephemeris_date = None
+
+
+    def set_name(self, name:str):
+        self.name = name
+
+    def set_ephemeris_date(self, ephemeris_date:datetime):
+        self.ephemeris_date = ephemeris_date
+
 
     def get_position(self, t_obs = None):
         t_data = t_obs if t_obs != None else self.t_data
