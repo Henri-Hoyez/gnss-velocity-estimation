@@ -14,7 +14,7 @@ def get_gps_week(time_of_week:date=None):
 
 
 
-def get_second_of_week(time_of_week:date=None):
+def get_second_of_week(time_of_week:datetime=None):
     if(time_of_week is None):
         time_of_week = datetime.now() 
 
@@ -32,7 +32,7 @@ def get_second_of_week(time_of_week:date=None):
 if __name__ == "__main__":
     
     print(get_gps_week())
-    print(get_second_of_week())
+    print(get_second_of_week(datetime(2019, 12, 26, 12, 0, 0)  ))
 
 
 
