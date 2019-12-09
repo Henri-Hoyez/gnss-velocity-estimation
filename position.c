@@ -49,7 +49,7 @@ long double i0                       =  0.963852456438;
 long double bigomega0                =  0.108886242411e1; 
 long double earthrate                =  bOMEGAE84;
 long double bigomegadot              = -0.815426822943e-8; 
-long double t                        =  1574762406;
+long double t                        =  209684;
 long double A;
 long double n0, n;
 long double tk;
@@ -67,6 +67,12 @@ n0 = sqrt(bGM84/(A*A*A));  //bGM84 is what the ICD-200 calls Greek mu
 tk = t - toe;              //t is the time of the pos. & vel. request.
 n = n0 + delta_n;
 mk = m0 + n*tk;
+
+
+
+printf("%Lf \n",n);
+
+printf("%Lf \n",mk);
 mkdot = n;
 ek = mk;
 for(iter=0; iter<7; iter++) ek = mk + e*sin(ek);  //Overkill for small e
