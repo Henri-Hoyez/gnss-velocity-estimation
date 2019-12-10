@@ -46,8 +46,8 @@ def obsToDataframe(file):
     i=0
     for index, row in df.iterrows():
         val=df.loc[index,'Sat']
-        if(val==">"):
-            df['Time']=df.loc[index,'0']
+    df['Time']=df['0']
+    print(df)
 # obsToDataframe("autoroute_apres_midi.obs")
 # formatFichier("autoroute_apres_midi.obs")
 
