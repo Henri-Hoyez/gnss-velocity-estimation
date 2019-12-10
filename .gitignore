@@ -1,0 +1,8 @@
+.vscode/
+data/
+test_data/
+
+
+utils/__pycache__/
+
+*.pyc
