@@ -3,4 +3,4 @@ data/
 test_data/
 
 
-*.pyc
+utils/__pycache__/
