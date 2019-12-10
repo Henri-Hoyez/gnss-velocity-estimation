@@ -23,9 +23,15 @@ class Satellite:
         self.i0 = i0
         self.i_dot = i_dot
 
+
+
         self.name = None
         self.ephemeris_date = None
+        self.type = None
 
+
+    def set_type(self, type:str):
+        self.type = type
 
     def set_name(self, name:str):
         self.name = name

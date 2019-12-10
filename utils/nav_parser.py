@@ -30,7 +30,7 @@ def make_matrix_from_nav_message(message:list):
 
 
 def parse_gps_message(message:list):
-    print("GPS :")
+    # print("GPS :")
     # print(message)
     # Quick and very dirty approach
     # parse the first line.
@@ -40,7 +40,7 @@ def parse_gps_message(message:list):
     nav_data = make_matrix_from_nav_message(message)
 
     toe = nav_data[3][0]
-    t_data = toe                                     # I make toe = t_data beacause I don't know t_data
+    t_data = toe                                     # I make t_data = t_toe beacause I don't know t_data
     mu0 = nav_data[1][3]                             # TODO: check these values
     delta_n = nav_data[1][2]
     e = nav_data[2][1]
@@ -61,6 +61,9 @@ def parse_gps_message(message:list):
 
     my_sat.set_name(gps_name)
     my_sat.set_ephemeris_date(nav_date)
+    my_sat.set_type("GPS")
+
+    return my_sat
     
 
 def parse_glonass_message(message:list):
@@ -76,7 +79,7 @@ def QZSS_message(message:list):
     # print()
     pass
 
-def clear_nav_file(file:str):
+def parse_nav_file(file:str):
     """Aimed to clear the navigation file
     
     Arguments:
@@ -84,6 +87,8 @@ def clear_nav_file(file:str):
     Returns:
         cleaned file {str} -- The cleaned rinex file.
     """
+
+    satellites = list()
 
     rinFile = open(file, "r")
 
@@ -100,21 +105,25 @@ def clear_nav_file(file:str):
 
     while(i < len(rinex_input)):
         if (rinex_input[i][0] == "G"):
-            parse_gps_message(rinex_input[i:i+GPS_SHIFT])
+            parsed_sat = parse_gps_message(rinex_input[i:i+GPS_SHIFT])
             i += GPS_SHIFT
+            satellites.append(parsed_sat)
             continue
         
         if rinex_input[i][0] == "R":
             parse_glonass_message(rinex_input[i:i+GLONASS_SHIFT])
             i += GLONASS_SHIFT
+            # satellites.append(parsed_sat)
             continue
 
         if rinex_input[i][0] == "J":
             QZSS_message(rinex_input[i:i+GPS_SHIFT])
             i += GPS_SHIFT
+            # satellites.append(parsed_sat)
             continue
-
         i += 1
+    
+    return satellites
 
 
 
@@ -124,4 +133,5 @@ def clear_nav_file(file:str):
 
 
 if __name__ == "__main__":
-    clear_nav_file('../test_data/autoroute_plus_tunnel.nav')
+    satelites = parse_nav_file('../test_data/autoroute_plus_tunnel.nav')
+    print(satelites)
