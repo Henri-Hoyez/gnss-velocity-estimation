@@ -1,8 +1,8 @@
 import pandas as pd
 import os
+from utils.gps_time import *
 
-
-
+from datetime import date, timedelta, time, datetime
 
 
 
@@ -41,12 +41,16 @@ def formatFichier(file):
 
 
 def obsToDataframe(file):
-    df=pd.read_csv(file,delim_whitespace=True,header=None,skiprows=lambda x:x<=29,names=['Sat','0','1','2','3','4','5'])
-    print(df)
-    i=0
-    for index, row in df.iterrows():
-        val=df.loc[index,'Sat']
+    df=pd.read_csv("data/"+file,delim_whitespace=True,header=None,skiprows=lambda x:x<=29,names=['Sat','0','1','2','3','4','5'])
     df['Time']=df['0']
+    print(df)
+    val=df.loc[0,'Time']
+    for index, row in df.iterrows():
+        if(str(df.loc[index,'Sat'])==">"):
+            print(datetime(int(df.loc[index,'0']),int(df.loc[index,'1']),int(df.loc[index,'2']),int(df.loc[index,'3']),int(df.loc[index,'4']),int(df.loc[index,'5'])))
+            val=get_second_of_week(datetime(int(df.loc[index,'0']),int(df.loc[index,'1']),int(df.loc[index,'2']),int(df.loc[index,'3']),int(df.loc[index,'4']),int(df.loc[index,'5'])))
+            print(val)
+        df.loc[index,'Time']=val
     print(df)
 # obsToDataframe("autoroute_apres_midi.obs")
 # formatFichier("autoroute_apres_midi.obs")
