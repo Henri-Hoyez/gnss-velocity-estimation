@@ -1,7 +1,8 @@
 import numpy as np
 import pandas as pd
 import datetime
-from satellite import Satellite
+from utils.satellite import Satellite
+from utils.gps_time import get_second_of_week
 
 GPS_SHIFT = 8
 GLONASS_SHIFT = 4
@@ -38,7 +39,6 @@ def parse_gps_message(message:list):
     nav_date = parse_date(message[0])
 
     nav_data = make_matrix_from_nav_message(message)
-
     toe = nav_data[3][0]
     t_data = toe                                     # I make t_data = t_toe beacause I don't know t_data
     mu0 = nav_data[1][3]                             # TODO: check these values
