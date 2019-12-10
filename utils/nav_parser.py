@@ -50,12 +50,15 @@ def parse_gps_message(message:list):
     sqrt_a = nav_data[2][3]
     crc = nav_data[4][1]
     crs = nav_data[1][1]
-    cic = nav_data[3][2]
+    cic = nav_data[3][1]
     cis = nav_data[3][3]
     omega_ascension0 = nav_data[3][2]
-    omega_dot_ascension = nav_data[3][3]
-    i0 = nav_data[3][0]
-    i_dot = nav_data[4][0]
+    omega_dot_ascension = nav_data[4][3]
+    i0 = nav_data[4][0]
+    i_dot = nav_data[5][0]
+
+
+    print('toe: '+ i_dot)
 
     my_sat = Satellite(float(toe), float(t_data), float(mu0), float(delta_n), float(e), 
     float(omega0), float(cws), float(cwc), float(sqrt_a), float(crc), float(crs), float(cic), 
