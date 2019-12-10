@@ -57,7 +57,9 @@ def parse_gps_message(message:list):
     i0 = nav_data[3][0]
     i_dot = nav_data[4][0]
 
-    my_sat = Satellite(toe,t_data,mu0, delta_n, e, omega0, cws, cwc, sqrt_a, crc, crs, cic, cis, omega_ascension0, omega_dot_ascension, i0, i_dot)
+    my_sat = Satellite(float(toe), float(t_data), float(mu0), float(delta_n), float(e), 
+    float(omega0), float(cws), float(cwc), float(sqrt_a), float(crc), float(crs), float(cic), 
+    float(cis), float(omega_ascension0), float(omega_dot_ascension), float(i0), float(i_dot))
 
     my_sat.set_name(gps_name)
     my_sat.set_ephemeris_date(nav_date)
@@ -67,9 +69,6 @@ def parse_gps_message(message:list):
     
 
 def parse_glonass_message(message:list):
-    # print("GLONASS: ")
-    # print(message)
-    # print()
     pass
 
 
@@ -124,12 +123,6 @@ def parse_nav_file(file:str):
         i += 1
     
     return satellites
-
-
-
-
-
-
 
 
 if __name__ == "__main__":
