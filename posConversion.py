@@ -5,6 +5,22 @@ import matplotlib.pyplot as plt
 
 global windowSize
 windowSize=10
+def nmeaSpeed(positionFile):
+    data=[]
+    file=open(positionFile)
+    compteur=0
+    ligne=file.readline()
+    while(ligne!=""):
+        if("$GPRMC" in ligne):
+            dataLine=ligne.split(",")
+            data.append(dataLine)
+        ligne=file.readline()
+
+    vitesse=[]
+    for i in range(len(data)):
+        vitesse.append(float(data[i][7])*1.852)
+    return vitesse
+    
 def tableauData(positionFile):
     data=[]
     file=open(positionFile)
@@ -67,25 +83,29 @@ def velocityEstimation(positionFile):
         print(velocityXmean[-1])
     for i in range(len(velocityXmean)):
         velocityNorm.append(math.sqrt(velocityXmean[i]**2+velocityYmean[i]**2+velocityZmean[i]**2)*3.6)
-    time2=[]
-    for i in range(len(data)-windowSize):
-        time2.append(i)
-
-    print(len(posX))
-    # plt.subplot(3,1,1)
-    # plt.plot(time2,velocityXmean)
-    # plt.subplot(3,1,2)
-    # plt.plot(time2,velocityYmean)
-    # plt.subplot(3,1,3)
-    # plt.plot(time2,velocityZmean)
-    
-    # plt.subplot(2,1,1)
-    # plt.plot(posX,posY)
-    
-    # plt.subplot(2,1,2)
-    plt.plot(time2,velocityNorm)
-    plt.grid()
-    plt.show()
+    return velocityNorm
 
 
-velocityEstimation("autoroute_apres_midi.pos")
+myVel=velocityEstimation("autoroute_apres_midi.pos")
+nmeaVel=nmeaSpeed("autoroute_apres_midi.nmea")
+# plt.subplot(3,1,1)
+# plt.plot(time2,velocityXmean)
+# plt.subplot(3,1,2)
+# plt.plot(time2,velocityYmean)
+# plt.subplot(3,1,3)
+# plt.plot(time2,velocityZmean)
+
+# plt.subplot(2,1,1)
+# plt.plot(posX,posY)
+
+# plt.subplot(2,1,2)
+time=np.linspace(0,2000,len(myVel))
+time2=np.linspace(0,2000,len(nmeaVel))
+plt.title("Vitesse mesurée sur l'autoroute")
+plt.plot(time,myVel,label="Différence de position")
+plt.plot(time2,nmeaVel,label="Ublox")
+plt.xlabel("Time (s)")
+plt.ylabel("Speed (km/h)")
+plt.legend(prop={'size':12})
+plt.grid()
+plt.show()
