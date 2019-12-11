@@ -58,8 +58,6 @@ def parse_gps_message(message:list):
     i_dot = nav_data[5][0]
 
 
-    print('toe: '+ i_dot)
-
     my_sat = Satellite(float(toe), float(t_data), float(mu0), float(delta_n), float(e), 
     float(omega0), float(cws), float(cwc), float(sqrt_a), float(crc), float(crs), float(cic), 
     float(cis), float(omega_ascension0), float(omega_dot_ascension), float(i0), float(i_dot))

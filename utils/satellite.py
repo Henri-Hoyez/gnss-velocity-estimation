@@ -74,7 +74,7 @@ class Satellite:
         ,[np.sin(omega_ascension)*np.cos(omega)+np.cos(omega_ascension)*np.sin(omega)*np.cos(i), -np.sin(omega_ascension)*np.sin(omega)+np.cos(omega_ascension)*np.cos(omega)*np.cos(i), -np.cos(omega_ascension)*np.sin(i)]
         ,[np.sin(omega)*np.sin(i), np.cos(omega)*np.sin(i), np.cos(i)]])
         
-        return np.dot(R,r_vect)
+        return (-1)*np.dot(R,r_vect)
 
     def get_velocity(self,delta_t=1):
         pos1 = self.get_position()
