@@ -7,44 +7,60 @@ class Doppler:
     # Compute basic parameters at request time
     def __init__(self):
         sats = parse_nav_file("data/Very_Bad_Trip/Belgique/autoroute_plus_tunnel.nav")
+        print([sat.name for sat in sats])
 
         self.ri1 = sats[10].get_position()
         self.ri2 = sats[9].get_position()
-        print(self.ri1/1000)
-        print(self.ri2/1000)
+        self.ri3 = sats[0].get_position()
+        # print(self.ri1/1000)
+        # print(self.ri2/1000)
         self.vi1 = sats[10].get_velocity()
         self.vi2 = sats[9].get_velocity()
+        self.vi3 = sats[0].get_velocity()
         
 
     
     def __get_K_n(self,f_ti,Di,ri,ru,vi):
         c = 299792458
         norm_ri_ru = np.linalg.norm(ri-ru)
-        return (c*Di*norm_ri_ru)/f_ti + vi[0]*(ri[0]-ru[0]) + vi[1]*(ri[1]-ru[1])
+        return (c*Di*norm_ri_ru)/f_ti + vi[0]*(ri[0]-ru[0]) + vi[1]*(ri[1]-ru[1]) + vi[2]*(ri[2]-ru[2])
 
     def get_usr_velocity(self):
         #G6 et G23 // 10 & 9
-        ru = [4043743.6490,261011.8175]
+        ru = [4043743.6490,261011.8175,4909156.8423]
+
         f_ti1 = 1575.42*10**6 #105690384.812
         f_ti2 = 1575.42*10**6 #101943589.013
+        f_ti3 = 1575.42*10**6
+
         Di1 = 1319.955
         Di2 = -513.404
-        K1 = self.__get_K_n(f_ti1,Di1,self.ri1[:2],ru[:2],self.vi1[:2])
-        K2 = self.__get_K_n(f_ti2,Di2,self.ri2[:2],ru[:2],self.vi2[:2])
+        Di3 = -2687.413
+
+        k1 = self.__get_K_n(f_ti1,Di1,self.ri1,ru,self.vi1)
+        k2 = self.__get_K_n(f_ti2,Di2,self.ri2,ru,self.vi2)
+        k3 = self.__get_K_n(f_ti3,Di3,self.ri3,ru,self.vi3)
+
         a1 = self.ri1[0]-ru[0]
         a2 = self.ri2[0]-ru[0]
+        a3 = self.ri3[0]-ru[0]
+
         b1 = self.ri1[1]-ru[1]
         b2 = self.ri2[1]-ru[1]
+        b3 = self.ri3[1]-ru[1]
 
-        K = np.transpose([K1,K2])
-        matrix_to_inv = np.array([[a1,b1],[a2,b2]])
-        m_inv = np.linalg.inv(matrix_to_inv)
-        v = np.dot(m_inv,K)
-        print(v)
-        print(np.linalg.norm(v)*3.6)
-        # vuy = (E2-(E1*(-self.ri2[0]-ru[0]))/(-self.ri1[0]+ru[0]))/((self.ri2[0]-ru[0])/(ru[0]-self.ri1[0])+ru[1]-self.ri2[1])
-        # vux = (E1 - vuy*(-self.ri1[1]+ru[1]))/(-self.ri1[0]+ru[0])
-        # print(np.linalg.norm([vux,vuy])*3.6)
+        c1 = self.ri1[2]-ru[2]
+        c2 = self.ri2[2]-ru[2]
+        c3 = self.ri3[2]-ru[2]
+
+        K = np.transpose([k1,k2,k3])
+        X = np.array([[a1,b1,c1],[a2,b2,c2],[a3,b3,c3]])
+        print(K)
+        X_inv = np.linalg.inv(X)
+        v = np.dot(X_inv,K)
+
+        print(np.linalg.norm(v))
+        
         return v
 
 
