@@ -7,16 +7,17 @@ class Doppler:
     # Compute basic parameters at request time
     def __init__(self):
         sats = parse_nav_file("data/Very_Bad_Trip/Belgique/autoroute_plus_tunnel.nav")
-        print([sat.name for sat in sats])
+        #print([sat.name for sat in sats])
 
         self.ri1 = sats[10].get_position()
         self.ri2 = sats[9].get_position()
         self.ri3 = sats[0].get_position()
         # print(self.ri1/1000)
-        # print(self.ri2/1000)
+        #print(self.ri2)
         self.vi1 = sats[10].get_velocity()
         self.vi2 = sats[9].get_velocity()
         self.vi3 = sats[0].get_velocity()
+        #print(self.vi2)
         
 
     
@@ -27,8 +28,7 @@ class Doppler:
 
     def get_usr_velocity(self):
         #G6 et G23 // 10 & 9
-        ru = [4043743.6490,261011.8175,4909156.8423]
-
+        ru = np.array([4043547.78553915,254207.686387644,4909623.02474359])
         f_ti1 = 1575.42*10**6 #105690384.812
         f_ti2 = 1575.42*10**6 #101943589.013
         f_ti3 = 1575.42*10**6
@@ -36,6 +36,9 @@ class Doppler:
         Di1 = 1319.955
         Di2 = -513.404
         Di3 = -2687.413
+
+        print(self.ri1)
+
 
         k1 = self.__get_K_n(f_ti1,Di1,self.ri1,ru,self.vi1)
         k2 = self.__get_K_n(f_ti2,Di2,self.ri2,ru,self.vi2)
@@ -55,11 +58,10 @@ class Doppler:
 
         K = np.transpose([k1,k2,k3])
         X = np.array([[a1,b1,c1],[a2,b2,c2],[a3,b3,c3]])
-        print(K)
         X_inv = np.linalg.inv(X)
         v = np.dot(X_inv,K)
 
-        print(np.linalg.norm(v))
+        print(np.linalg.norm(v)*3.6, "km/h")
         
         return v
 
