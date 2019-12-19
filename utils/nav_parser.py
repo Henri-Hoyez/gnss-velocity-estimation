@@ -64,7 +64,7 @@ def parse_gps_message(message:list):
     float(omega0), float(cws), float(cwc), float(sqrt_a), float(crc), float(crs), float(cic), 
     float(cis), float(omega_ascension0), float(omega_dot_ascension), float(i0), float(i_dot), float(clock_drift))
 
-    my_sat.set_name(gps_name)
+    my_sat.set_name(gps_name.replace(" ","0"))
     my_sat.set_ephemeris_date(nav_date)
     my_sat.set_type("GPS")
 
