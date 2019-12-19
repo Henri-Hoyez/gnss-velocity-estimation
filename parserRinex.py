@@ -103,7 +103,7 @@ def posToDataframe(file):
 
 
 # EXEMPLE :
-# df=obsToDataframeFinal("autoroute_apres_midi.obs")
+df=obsToDataframeFinal("autoroute_apres_midi.obs")
 # print(df)
-df=posToDataframe("autoroute_apres_midi.pos")
-print(df)
+# df=posToDataframe("autoroute_apres_midi.pos")
+# print(df)
