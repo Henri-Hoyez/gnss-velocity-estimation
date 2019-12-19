@@ -1,37 +1,43 @@
 import numpy as np
 from utils.nav_parser import parse_nav_file
+import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D
+
+from utils.pos_file_converter import parse_positions
+
+
+import pandas as pd
 
 # ftp://cddis.gsfc.nasa.gov/pub/gps/products/wwww/igswwwwd.sp3.Z | template ephemeris
 
 class Doppler:
     # Compute basic parameters at request time
     def __init__(self):
-        sats = parse_nav_file("test_data/autoroute_plus_tunnel.nav")
+        self.sats = parse_nav_file("test_data/autoroute_plus_tunnel.nav")
 
-        # set the good t_data ( 10 dec à 10:00:00 )
+        # set the good t_data ( 26 nov à 10:00:00 )
 
-        sats[9].t_data = 208800.0
-        sats[0].t_data = 208800.0
+        sats[9].t_data = 208800
+        sats[0].t_data = 208800
+        sats[10].t_data = 208800
 
         print(sats[10].name,   ' - ', sats[9].name,   ' - ',sats[0].name )
         print(sats[10].t_data, ' - ', sats[9].t_data, ' - ',sats[0].t_data )
 
+        # stats_indx = [9, 0, 10]
+
+        # for s in stats_indx:
+        #     sats[s].show_info()
+
+
         self.ri1 = sats[10].get_position()
         self.ri2 = sats[9].get_position()
         self.ri3 = sats[0].get_position()
-        print(self.ri1)
         #print(self.ri2)
 
         self.vi1 = sats[10].get_velocity()
         self.vi2 = sats[9].get_velocity()
         self.vi3 = sats[0].get_velocity()
-        #print(self.vi2)
-        
-
-
-
-
-
 
 
     def test_angles(self):
@@ -48,77 +54,91 @@ class Doppler:
 
     def get_k(self, D_i, f_ti, v_i, a_i):
         c = 3.00*10**8
-        res = c*D_i/f_ti + np.dot(v_i, a_i)
+        res =  c * D_i / f_ti + np.vdot(v_i, a_i)
+        print( c * D_i / f_ti )
         return res
 
 
-    def azimuth_to_ECEF(self, sat_position:np.ndarray, user_position:np.ndarray):
-        # sat_position  => [ x_sat , y_sat , z_sat]
+    def azimuth_to_ECEF(self, vector:np.ndarray):
+        # vector  => [ x_sat , y_sat , z_sat]
         # user_position => [ x_usr , y_usr , z_usr]
 
-        vect_norm = (sat_position - user_position) / np.linalg.norm(sat_position - user_position)
-        # [vect_normx, vect_normy, vect_normz]
+        v_norm = vector/ np.linalg.norm(vector)
+        theta = np.arctan( (v_norm[0]) / ( v_norm[2] ) )
+        phi = np.arctan( v_norm[1] / np.sqrt( v_norm[0]**2 + v_norm[2]**2 ) )
 
-
-        theta = np.arctan( (vect_norm[0]) / ( vect_norm[2] ) )
-        phi = np.arcsin( (vect_norm[2]) / ( np.sqrt(vect_norm[0]**2 + vect_norm[2]**2) ) )
-        x, y, z = np.cos(phi) * np.cos(theta), np.cos(phi) * np.sin(theta), np.sin(phi) 
+        x, y, z = np.cos(phi) * np.cos(theta), np.sin(theta), np.cos(phi) * np.sin(theta) 
 
         return np.array([x, y, z])
 
 
-    def get_usr_velocity(self):
-        #G6 et G23 // 10 & 9
+    def get_usr_velocity(self,t ,ru:np.ndarray, sats:list, D_i:list, f_ti:list ):
 
-        ru = np.array([4043547.78553915, 254207.686387644, 4909623.02474359])
+        a1 = (self.ri1 - ru) / (np.linalg.norm(self.ri1 - ru))
+        a2 = (self.ri2 - ru) / (np.linalg.norm(self.ri2 - ru))
+        a3 = (self.ri3 - ru) / (np.linalg.norm(self.ri3 - ru))
 
-        f_ti1 = 1575.42*10**6 #105690384.812
-        f_ti2 = 1575.42*10**6 #101943589.013
-        f_ti3 = 1575.42*10**6
+        # test plot
+        k1 = self.get_k(D_i[0], f_ti[0], self.vi1, a1)
+        k2 = self.get_k(D_i[1], f_ti[1], self.vi2, a2)
+        k3 = self.get_k(D_i[2], f_ti[2], self.vi3, a3)
 
-        Di1 = 1319.955
-        Di2 = -513.404
-        Di3 = -2687.413
-
-        # convert azimits vectors to ECEF-translated 'base' beceause all velocity 
-        # are axplained in this azimut base.
-
-        a1 = self.azimuth_to_ECEF(self.ri1, ru)
-        a2 = self.azimuth_to_ECEF(self.ri2, ru)
-        a3 = self.azimuth_to_ECEF(self.ri3, ru)
-
-        k1 = self.get_k(Di1, f_ti1, self.vi1, a1)
-        k2 = self.get_k(Di2, f_ti2, self.vi2, a2)
-        k3 = self.get_k(Di3, f_ti3, self.vi3, a3)
+        print(np.linalg.norm( self.vi1)*3.6)
 
         K = np.array([k1, k2, k3]).T
 
         M = np.array([a1, a2, a3])
 
         v = np.dot(np.linalg.inv(M), K)
-        print()
-        print( np.linalg.inv(M) )
-        print( K )
 
-        print(np.linalg.norm(v) * 3.6 , 'km/h paupiette')
+        v_ECEF = self.azimuth_to_ECEF(v)
+        v_ECEF = v_ECEF / np.linalg.norm(v_ECEF) * np.linalg.norm(v)
+
+        print('V = ', np.linalg.norm(v_ECEF)*3.6, 'km/h')
+        print('SANS PROJETAGE: ', np.linalg.norm(v)*3.6)
+
+        return v_ECEF
 
 
+    
+
+    def draw_velocity_evolution(self):
+        #G6 et G23 // G10 & G09
+
+        # position_history = parse_positions('test_data/autoroute_plus_tunnel.pos')
+
+        # position_history = position_history.set_index('gps_sec_of_week')
+
+
+        position_history = pd.read_hdf('test_data/autoroute_plus_tunnel.hdf5')#.set_index('gps_sec_of_week')
+
+        print(position_history.head())
+
+        sats = []
+        for i in [9, 0, 10]:
+            sats.append(self.sats[i])     
+
+        for i in range(1000):
+            data = position_history.iloc[i]
+            f_ti = [1.57542*10**9]*3 
+            ru = [np.array([data['x'], data['y'], data['z']])]
+
+
+        # ru = np.array([4043744, 261012, 4909157])
         
+        D_i = [385.813, -206.999, -2408.521]
 
-
-
-        
-
+        v = self.get_usr_velocity(208800 ,ru, sats, D_i, f_ti)
+        print('FINAL VELOCITY :', np.linalg.norm(v)*3.6, 'km/h')
 
 
 if __name__ == "__main__":
     sats = parse_nav_file("test_data/autoroute_plus_tunnel.nav")
-    # print(sats[1].name)
-    # print(sats[1].get_position()/1000)
-    # print(np.linalg.norm(sats[1].get_velocity())*3.6)
-    # velocity = Doppler(208784,1574762406,1.28612756881,0.489020369661*10**-8,0.260362529662*10**-2,0.7931942133,0.622682273388*10**-5,0.1460313797*10**-5,0.515365547943*10**4,0.25971875*10**3,0.2853125*10**2,-0.204890966415*10**-7,0.577419996262*10**-7,0.108886242411*10,-0.815426822943*10**-8,0.963852456438,0.431089385164*10**-9)
+
     doppler = Doppler()
-    doppler.get_usr_velocity()
+    doppler.draw_velocity_evolution()
+    # doppler.get_usr_velocity()
+
 
 
 

@@ -82,6 +82,14 @@ class Satellite:
         pos2 = self.get_position(self.t_data+delta_t)
         return (pos2-pos1)/(delta_t)
         
+    def show_info(self):
+        print('========= ', self.name, '========= ')
+        print('  - Time of Ephemeris', self.toe)
+        print('  - Stop time of truth', self.toe + 2*(60**2) )
+        print('  - potition at t_data', self.get_position(self.t_data))
+        print('  - Actual T_data', self.t_data )
+        print('  - Is good ? ', self.t_data < self.toe + 2*(60**2) )
+        print('=============================== \n')
 
     
 if __name__ == "__main__":
