@@ -18,7 +18,7 @@ def get_second_of_week(time_of_week:datetime=None):
     if(time_of_week is None):
         time_of_week = datetime.now() 
 
-    gps_day_second = (time_of_week.isoweekday()+1) % 7 * 24 * 60**2  # Get second of all day before
+    gps_day_second = (time_of_week.isoweekday()) % 7 * 24 * 60**2  # Get second of all day before
 
     gps_day_second += time_of_week.hour * 60**2 + time_of_week.minute * 60 + time_of_week.second
 

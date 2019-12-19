@@ -1,7 +1,8 @@
 import numpy as np
 import pandas as pd
 import datetime
-from satellite import Satellite
+from utils.satellite import Satellite
+from utils.gps_time import get_second_of_week
 
 GPS_SHIFT = 8
 GLONASS_SHIFT = 4
@@ -38,7 +39,6 @@ def parse_gps_message(message:list):
     nav_date = parse_date(message[0])
 
     nav_data = make_matrix_from_nav_message(message)
-
     toe = nav_data[3][0]
     t_data = toe                                     # I make t_data = t_toe beacause I don't know t_data
     mu0 = nav_data[1][3]                             # TODO: check these values
@@ -50,14 +50,17 @@ def parse_gps_message(message:list):
     sqrt_a = nav_data[2][3]
     crc = nav_data[4][1]
     crs = nav_data[1][1]
-    cic = nav_data[3][2]
+    cic = nav_data[3][1]
     cis = nav_data[3][3]
     omega_ascension0 = nav_data[3][2]
-    omega_dot_ascension = nav_data[3][3]
-    i0 = nav_data[3][0]
-    i_dot = nav_data[4][0]
+    omega_dot_ascension = nav_data[4][3]
+    i0 = nav_data[4][0]
+    i_dot = nav_data[5][0]
 
-    my_sat = Satellite(toe,t_data,mu0, delta_n, e, omega0, cws, cwc, sqrt_a, crc, crs, cic, cis, omega_ascension0, omega_dot_ascension, i0, i_dot)
+
+    my_sat = Satellite(float(toe), float(t_data), float(mu0), float(delta_n), float(e), 
+    float(omega0), float(cws), float(cwc), float(sqrt_a), float(crc), float(crs), float(cic), 
+    float(cis), float(omega_ascension0), float(omega_dot_ascension), float(i0), float(i_dot))
 
     my_sat.set_name(gps_name)
     my_sat.set_ephemeris_date(nav_date)
@@ -67,9 +70,6 @@ def parse_gps_message(message:list):
     
 
 def parse_glonass_message(message:list):
-    # print("GLONASS: ")
-    # print(message)
-    # print()
     pass
 
 
@@ -124,12 +124,6 @@ def parse_nav_file(file:str):
         i += 1
     
     return satellites
-
-
-
-
-
-
 
 
 if __name__ == "__main__":
