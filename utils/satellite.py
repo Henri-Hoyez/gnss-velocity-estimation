@@ -4,7 +4,7 @@ import datetime
 
 class Satellite:
 
-    def __init__(self,toe,t_data,mu0, delta_n, e, omega0, cws, cwc, sqrt_a, crc, crs, cic, cis, omega_ascension0, omega_dot_ascension, i0, i_dot):
+    def __init__(self,toe,t_data,mu0, delta_n, e, omega0, cws, cwc, sqrt_a, crc, crs, cic, cis, omega_ascension0, omega_dot_ascension, i0, i_dot, clock_drift):
         self.toe = toe
         self.t_data = t_data
         self.mu0 = mu0
@@ -22,6 +22,7 @@ class Satellite:
         self.omega_dot_ascension = omega_dot_ascension
         self.i0 = i0
         self.i_dot = i_dot
+        self.clock_drift = clock_drift  
 
 
 
