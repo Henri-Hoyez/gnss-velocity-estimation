@@ -65,13 +65,25 @@ class Doppler:
         # vector  => [ x_sat , y_sat , z_sat]
         # user_position => [ x_usr , y_usr , z_usr]
 
-        v_norm = vector/ np.linalg.norm(vector)
-        theta = np.arctan( (v_norm[0]) / ( v_norm[2] ) )
-        phi = np.arctan( v_norm[1] / np.sqrt( v_norm[0]**2 + v_norm[2]**2 ) )
+        r = np.linalg.norm(vector)
 
-        x, y, z = np.cos(phi) * np.cos(theta), np.sin(theta), np.cos(phi) * np.sin(theta) 
+        theta = np.arctan( (vector[0]) / ( vector[2] ) )
+        phi = np.arctan( vector[1] / np.sqrt( vector[0]**2 + vector[2]**2 ) )
+
+        x, y, z = r*np.cos(phi) * np.cos(theta), r*np.sin(theta), r*np.cos(phi) * np.sin(theta) 
 
         return np.array([x, y, z])
+
+    def project_on_ai(self, vi, ai):
+        return np.dot(vi, ai)/np.linalg.norm(ai)
+
+    def ecef_to_enu(self, origin, v):
+        E = None
+        N = None
+        U = None
+
+
+
 
 
     def get_usr_velocity(self,t ,ru:np.ndarray, sats:list, D_i:list, f_ti:list ):
@@ -80,31 +92,39 @@ class Doppler:
         a2 = (self.ri2 - ru) / (np.linalg.norm(self.ri2 - ru))
         a3 = (self.ri3 - ru) / (np.linalg.norm(self.ri3 - ru))
 
-        # test plot
         k1 = self.get_k(D_i[0], f_ti[0], self.vi1, a1)
         k2 = self.get_k(D_i[1], f_ti[1], self.vi2, a2)
         k3 = self.get_k(D_i[2], f_ti[2], self.vi3, a3)
 
-        # print(np.linalg.norm( self.vi1)*3.6)
-
         K = np.array([k1, k2, k3])
 
         M = np.array([a1, a2, a3])
-        # print(M)
-
 
         v = np.dot(np.linalg.inv(M), K)
 
-        v_ECEF = self.azimuth_to_ECEF(v)
-        v_ECEF = v_ECEF / np.linalg.norm(v_ECEF) * np.linalg.norm(v)
-
-        # print('V = ', np.linalg.norm(v_ECEF)*3.6, 'km/h')
-        # print('SANS PROJETAGE: ', np.linalg.norm(v)*3.6)
-
-        return v_ECEF
+        vai = np.array([
+            self.project_on_ai(self.vi1, a1),
+            self.project_on_ai(self.vi2, a2),
+            self.project_on_ai(self.vi3, a3)
+        ])
 
 
 
+
+
+        print('Before: ', v)
+        print('after : ', vai)
+        print('projection vai:', self.azimuth_to_ECEF(vai))
+        # print('projection v  :', self.azimuth_to_ECEF(v))
+        
+        print('norme vai:', np.linalg.norm(self.azimuth_to_ECEF(vai)))
+        print('norme v  :', np.linalg.norm(self.azimuth_to_ECEF(v)))
+        
+    
+        return np.linalg.norm(self.azimuth_to_ECEF(vai))
+
+
+    
 
 
 
@@ -161,11 +181,29 @@ class Doppler:
         # print('FINAL VELOCITY :', np.linalg.norm(v)*3.6, 'km/h')
 
 
+    def test_velocity(self):
+        di = [1319.955, -513.404, -2687.413]
+
+        ru = np.array([4043547.78553915, 254207.686387644, 4909623.02474359])
+
+        sats = [self.sats[i] for i  in [9, 0, 10]]
+        
+        doppler = Doppler()
+        v = doppler.get_usr_velocity(208800, ru, sats,di, [1.57542*10**9]*3  )
+       
+       
+
+
+
 if __name__ == "__main__":
     sats = parse_nav_file("test_data/autoroute_plus_tunnel.nav")
 
-    doppler = Doppler()
-    doppler.draw_velocity_evolution()
+    doppler = Doppler() 
+
+    doppler.test_velocity()
+
+    # doppler = Doppler()
+    # doppler.draw_velocity_evolution()
     # doppler.get_usr_velocity()
 
 

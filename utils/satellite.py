@@ -78,8 +78,8 @@ class Satellite:
         return (-1)*np.dot(R,r_vect)
 
     def get_velocity(self,delta_t=1):
-        pos1 = self.get_position()
-        pos2 = self.get_position(self.t_data+delta_t)
+        pos1 = self.get_position(self.t_data - delta_t)
+        pos2 = self.get_position(self.t_data)
         return (pos2-pos1)/(delta_t)
         
     def show_info(self):
