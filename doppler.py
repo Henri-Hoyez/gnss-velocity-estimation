@@ -2,13 +2,13 @@ import numpy as np
 from utils.nav_parser import parse_nav_file
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
+import pandas as pd
 
 from utils.pos_file_converter import parse_positions
 from utils.parserRinex import obsToDataframeFinal
 from utils.satelite_manager import get_satelites
 
 
-import pandas as pd
 
 # ftp://cddis.gsfc.nasa.gov/pub/gps/products/wwww/igswwwwd.sp3.Z | template ephemeris
 
@@ -23,8 +23,8 @@ class Doppler:
         sats[0].t_data = 208800
         sats[10].t_data = 208800
 
-        print(sats[10].name,   ' - ', sats[9].name,   ' - ',sats[0].name )
-        print(sats[10].t_data, ' - ', sats[9].t_data, ' - ',sats[0].t_data )
+        # print(sats[10].name,   ' - ', sats[9].name,   ' - ',sats[0].name )
+        # print(sats[10].t_data, ' - ', sats[9].t_data, ' - ',sats[0].t_data )
 
         # stats_indx = [9, 0, 10]
 
@@ -32,9 +32,9 @@ class Doppler:
         #     sats[s].show_info()
 
 
-        self.ri1 = sats[10].get_position()
-        self.ri2 = sats[9].get_position()
-        self.ri3 = sats[0].get_position()
+        self.ri1 = sats[10].get_pos()
+        self.ri2 = sats[9].get_pos()
+        self.ri3 = sats[0].get_pos()
         #print(self.ri2)
 
         self.vi1 = sats[10].get_velocity()
@@ -56,8 +56,8 @@ class Doppler:
 
     def get_k(self, D_i, f_ti, v_i, a_i):
         c = 3.00*10**8
-        res =  c * D_i / f_ti + np.vdot(v_i, a_i)
-        # print( c * D_i / f_ti )
+        res =  (c * (D_i / f_ti)) + np.vdot(v_i, a_i)
+        # print(  np.linalg.norm(v_i)*3.6 )
         return res
 
 
@@ -83,18 +83,56 @@ class Doppler:
         U = None
 
 
+    def visualize(self, ru:np.ndarray, sats:list, t:int):
+
+        indexes = [s.name for s in sats]
+        indexes.append('usr')
+
+        positions = []
+
+        for s in sats:
+            x, y, z, vx, vy, vz = s.get_pos(t)
+            # vx, vy, vz = s.get_velocity()
+            # print("//// V = ", np.linalg.norm([vx, vy, vz])*3.6)
+            # exit()
+            positions.append([ x, y, z, vx, vy, vz])
+
+        positions.append([ru[0], ru[1], ru[2], 0, 0, 0])
+        df = pd.DataFrame(np.array(positions), columns=['x','y','z', 'vx', 'vy', 'vz'], index=indexes)
+
+        # print(df)
+        # print(np.linalg.norm(sats[0].get_velocity(t)))
 
 
+        fig = plt.figure()
+        ax = Axes3D(fig)
 
-    def get_usr_velocity(self,t ,ru:np.ndarray, sats:list, D_i:list, f_ti:list ):
+        for i in range( df.shape[0] ): #plot each point + it's index as text above
+            x,y,z = df['x'][i], df['y'][i] , df['z'][i]
+            vx, vy, vz = df['vx'][i]*3.6, df['vy'][i]*3.6 , df['vz'][i]*3.6
 
-        a1 = (self.ri1 - ru) / (np.linalg.norm(self.ri1 - ru))
-        a2 = (self.ri2 - ru) / (np.linalg.norm(self.ri2 - ru))
-        a3 = (self.ri3 - ru) / (np.linalg.norm(self.ri3 - ru))
+            ax.scatter(x, y, z, color='b') 
+            ax.text( x, y, z,  '%s' % (str(indexes[i])), size=20, zorder=1,  
+            color='k') 
 
-        k1 = self.get_k(D_i[0], f_ti[0], self.vi1, a1)
-        k2 = self.get_k(D_i[1], f_ti[1], self.vi2, a2)
-        k3 = self.get_k(D_i[2], f_ti[2], self.vi3, a3)
+            ax.quiver(x, y, z, vx, vy, vz  )
+
+        plt.show()
+
+        
+
+
+    def get_usr_velocity(self,t:int ,ru:np.ndarray, sats:list, D_i:list, f_ti:list ):
+
+        # self.visualize(ru, sats, t)
+
+        a1 = (self.sats[0].get_pos(t) [:3]- ru) / (np.linalg.norm(self.sats[0].get_pos(t) [:3]- ru))
+        a2 = (self.sats[1].get_pos(t) [:3]- ru) / (np.linalg.norm(self.sats[1].get_pos(t) [:3]- ru))
+        a3 = (self.sats[2].get_pos(t) [:3]- ru) / (np.linalg.norm(self.sats[2].get_pos(t) [:3]- ru))
+
+        k1 = self.get_k(D_i[0], f_ti[0], self.sats[0].get_pos(t)[3:], a1)
+        k2 = self.get_k(D_i[1], f_ti[1], self.sats[1].get_pos(t)[3:], a2)
+        k3 = self.get_k(D_i[2], f_ti[2], self.sats[2].get_pos(t)[3:], a3)
 
         K = np.array([k1, k2, k3])
 
@@ -102,29 +140,25 @@ class Doppler:
 
         v = np.dot(np.linalg.inv(M), K)
 
-        vai = np.array([
-            self.project_on_ai(self.vi1, a1),
-            self.project_on_ai(self.vi2, a2),
-            self.project_on_ai(self.vi3, a3)
-        ])
+        # print('K = ', K)
+        # print('M = ', M)
+        # print('det(M) = ', np.linalg.det(M))
+        # print('v = ', v)
+        print('||v||  =', np.linalg.norm(v)*3.6, 'km/h')
 
 
+        # fig = plt.figure()
+        # ax = Axes3D(fig)
 
+        # ax.scatter(ru[0], ru[1], ru[2], color='b') 
+        # ax.text(ru[0], ru[1], ru[2],  '%s' % ("usr"), size=20, zorder=1, color='k') 
+        # ax.quiver(ru[0], ru[1], ru[2], v[0], v[1], v[2])
 
+        # plt.show()
 
-        print('Before: ', v)
-        print('after : ', vai)
-        print('projection vai:', self.azimuth_to_ECEF(vai))
-        # print('projection v  :', self.azimuth_to_ECEF(v))
-        
-        print('norme vai:', np.linalg.norm(self.azimuth_to_ECEF(vai)))
-        print('norme v  :', np.linalg.norm(self.azimuth_to_ECEF(v)))
-        
+        return v*3.6
     
-        return np.linalg.norm(self.azimuth_to_ECEF(vai))
 
-
-    
 
 
 
@@ -187,9 +221,14 @@ class Doppler:
         ru = np.array([4043547.78553915, 254207.686387644, 4909623.02474359])
 
         sats = [self.sats[i] for i  in [9, 0, 10]]
+
         
         doppler = Doppler()
         v = doppler.get_usr_velocity(208800, ru, sats,di, [1.57542*10**9]*3  )
+
+        # sats[0].show_trajetcory()
+
+        # doppler.draw_velocity_evolution()
        
        
 

@@ -41,7 +41,7 @@ def parse_gps_message(message:list):
     nav_data = make_matrix_from_nav_message(message)
     toe = nav_data[3][0]
     t_data = toe                                     # I make t_data = t_toe beacause I don't know t_data
-    mu0 = nav_data[1][3]                             # TODO: check these values
+    mu0 = nav_data[1][3]                             
     delta_n = nav_data[1][2]
     e = nav_data[2][1]
     omega0 = nav_data[4][2]
