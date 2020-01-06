@@ -52,7 +52,6 @@ class Satellite:
         for t in range(int(t_in), int(t_out)):
             positions.append(self.get_pos(t)[:3])
 
-
         positions = np.array(positions)
         fig = plt.figure()
         ax = Axes3D(fig)
@@ -63,11 +62,13 @@ class Satellite:
 
 
     def get_pos(self, t_obs:int=None):
+        self.show_satelite_epheremide()
+        exit()
+
         t_data = t_obs if t_obs != None else self.t_data
 
         bOMEGAE84 = 7.2921151467*10**-5
         bGM84 = 3.986005e14
-
 
         A = self.sqrt_a * self.sqrt_a
         n0 = np.sqrt(bGM84/(A*A*A))
@@ -80,8 +81,6 @@ class Satellite:
 
         for _ in range(7):
             ek = mk + self.e*np.sin(ek)
-
-
         
         ekdot = mkdot/(1.0 - self.e*np.cos(ek))
         tak = np.arctan2( np.sqrt(1.0 - self.e * self.e)*np.sin(ek), np.cos(ek)-self.e)
@@ -94,29 +93,22 @@ class Satellite:
         corr_r = self.crs*np.sin(2.0*phik) + self.crc*np.cos(2.0*phik)
         corr_i = self.cis*np.sin(2.0*phik) + self.cic*np.cos(2.0*phik)
 
-        
-
         uk = phik + corr_u
         rk = A*(1.0 - self.e*np.cos(ek)) + corr_r
         ik = self.i0 + self.i_dot * tk + corr_i
         ukdot = takdot +2.0*(self.cws*np.cos(2.0*uk)-self.cwc*np.sin(2.0*uk))*takdot
         rkdot = A*self.e*np.sin(ek)*n/(1.0-self.e*np.cos(ek)) + 2.0*(self.crs*np.cos(2.0*uk)-self.crc*np.sin(2.0*uk))*takdot
         ikdot = self.i_dot + (self.cis*np.cos(2.0*uk)-self.cic*np.sin(2.0*uk))*2.0*takdot
-       
 
         xpk = rk*np.cos(uk)
         ypk = rk*np.sin(uk)
 
-
         xpkdot = rkdot * np.cos(uk) - ypk * ukdot
         ypkdot = rkdot * np.sin(uk) + xpk * ukdot
 
-
         omegak = self.omega_ascension0 + (self.omega_dot_ascension-bOMEGAE84)*tk - bOMEGAE84*self.toe
 
-
         omegakdot = (self.omega_dot_ascension - bOMEGAE84)
-
 
         xk = xpk*np.cos(omegak) - ypk * np.sin(omegak)*np.cos(ik)
         yk = xpk*np.sin(omegak) + ypk * np.cos(omegak)*np.cos(ik)
@@ -132,36 +124,43 @@ class Satellite:
     def get_velocity(self,delta_t=1):
         pos1 = self.get_pos(self.t_data - delta_t)
         pos2 = self.get_pos(self.t_data)
+
         return (pos2-pos1)/(delta_t)
+
+
+
+
+    def velocity_evolution(self):
+        t_out = self.toe * 2*60*60
         
-    def show_info(self):
-        print('========= ', self.name, '========= ')
-        print('  - Time of Ephemeris', self.toe)
-        print('  - Stop time of truth', self.toe + 2*(60**2) )
-        print('  - potition at t_data', self.get_pos(self.t_data))
-        print('  - Actual T_data', self.t_data )
-        print('  - Is good ? ', self.t_data < self.toe + 2*(60**2) )
-        print('=============================== \n')
+        velocities = [ np.linalg.norm(self.get_velocity(t)) for t in range(int(self.toe + 1), int(t_out)) ]
+
+        plt.plot(list(range(self.toe + 1, t_out)), velocities, label=self.name)
+        plt.grid()
+
+
+
+
 
     def show_satelite_epheremide(self):
-        print('****---***')
-        print(self.name)
-        print(self.sqrt_a       )
-        print(self.toe         )
-        print(self.mu0          )
-        print(self.e           )
-        print(self.delta_n     )
-        print(self.omega0  )
-        print(self.cws         )
-        print(self.cwc         )
-        print(self.crs         )
-        print('crc', self.crc         )
-        print(self.cis         )
-        print(self.cic         )
-        print(self.i_dot        )
-        print(self.i0          )
-        print(self.omega_ascension0   )
-        print(self.omega_dot_ascension )
+        print('*** --- ***')
+        print("name", self.name)
+        print("sqrt_a", self.sqrt_a)
+        print("toe", self.toe)
+        print("mu0", self.mu0)
+        print("e", self.e)
+        print("delta_n", self.delta_n)
+        print("omega0 ", self.omega0)
+        print("cws ", self.cws)
+        print("cwc ",self.cwc)
+        print("crs", self.crs)
+        print('crc', self.crc )
+        print("cis", self.cis)
+        print("cic", self.cic)
+        print("i_dot", self.i_dot)
+        print("i0,", self.i0 )
+        print("omega_ascension0", self.omega_ascension0   )
+        print("omega_dot_ascension", self.omega_dot_ascension )
         print()
     
 if __name__ == "__main__":

@@ -143,8 +143,21 @@ class Doppler:
         # print('K = ', K)
         # print('M = ', M)
         # print('det(M) = ', np.linalg.det(M))
-        # print('v = ', v)
-        print('||v||  =', np.linalg.norm(v)*3.6, 'km/h')
+        
+
+        print("Sat_Names : ", [s.name for s in sats])
+
+        print("Sat_positions: ", [s.get_velocity(t)[:3] for s in sats])
+        
+        print("Sat_Valocities: ", [s.get_velocity(t)[3:] for s in sats])
+        
+        print('v_usr = ', v)
+
+        # for s in sats:
+        #     s.velocity_evolution()
+        # plt.show()
+
+        # print('||v||  =', np.linalg.norm(v)*3.6, 'km/h')
 
 
         # fig = plt.figure()
@@ -206,11 +219,10 @@ class Doppler:
             v = self.get_usr_velocity(time, ru, sats, d_i, f_ti)
             v_data.append(np.linalg.norm(v)*3.6)
 
-        plt.plot(list(position_history.index)[:len(v_data)], v_data)
-        plt.grid()
-        plt.show()
-        
-        
+        # plt.plot(list(position_history.index)[:len(v_data)], v_data)
+        # plt.grid()
+        # plt.legend()
+        # plt.show()
         
         # print('FINAL VELOCITY :', np.linalg.norm(v)*3.6, 'km/h')
 
