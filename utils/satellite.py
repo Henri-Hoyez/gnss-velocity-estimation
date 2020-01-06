@@ -1,5 +1,7 @@
 import numpy as np
 import datetime
+import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D
 
 
 class Satellite:
@@ -22,7 +24,7 @@ class Satellite:
         self.omega_dot_ascension = omega_dot_ascension
         self.i0 = i0
         self.i_dot = i_dot
-        self.clock_drift = clock_drift
+        self.clock_drift = clock_drift  
 
 
         self.name = None
@@ -40,51 +42,126 @@ class Satellite:
         self.ephemeris_date = ephemeris_date
 
 
-    def get_position(self, t_obs = None):
+    def show_trajetcory(self):
+        t_in  = self.toe
+        t_out = self.toe + 3*60**2
+
+        positions = []
+
+        for t in range(int(t_in), int(t_out)):
+            positions.append(self.get_pos(t)[:3])
+
+        positions = np.array(positions)
+        fig = plt.figure()
+        ax = Axes3D(fig)
+
+        ax.scatter(positions[:,0],positions[:,1],positions[:,2])
+
+        plt.show()
+
+
+    def get_pos(self, t_obs:int=None):
+        self.show_satelite_epheremide()
+        exit()
+
         t_data = t_obs if t_obs != None else self.t_data
 
-        a = self.sqrt_a**2
+        bOMEGAE84 = 7.2921151467*10**-5
+        bGM84 = 3.986005e14
 
-        GM = 3.986004418*10**14
-        omega_e = 7.2921151467*10**-5
+        A = self.sqrt_a * self.sqrt_a
+        n0 = np.sqrt(bGM84/(A*A*A))
+        tk = t_data - self.toe
+        n = n0 + self.delta_n
+        mk = self.mu0 + n * tk
 
-        t = t_data-self.toe
-        mu  = self.mu0 + (np.sqrt(GM/(a**3)) + self.delta_n) * t
-        # E = mu + e * np.sin(E)
+        mkdot = n
+        ek = mk
 
-        E = mu
-        for i in range(7): 
-            E = mu + self.e*np.sin(E)
+        for _ in range(7):
+            ek = mk + self.e*np.sin(ek)
         
-        v = np.arctan((np.sqrt(1-self.e**2)*np.sin(E))/(np.cos(E)-self.e))
+        ekdot = mkdot/(1.0 - self.e*np.cos(ek))
+        tak = np.arctan2( np.sqrt(1.0 - self.e * self.e)*np.sin(ek), np.cos(ek)-self.e)
 
-        # Correct for orbital perturbations
-        omega = self.omega0 + self.cwc * np.cos(2*(self.omega0+v)) + self.cws * np.sin(2*(self.omega0+v))
-        r = a*(1-self.e*np.cos(E))+ self.crc * np.cos(2*(self.omega0+v)) + self.crs*np.sin(2*(self.omega0+v))
-        i = self.i0 + self.i_dot * t + self.cic * np.cos(2*(self.omega0+v)) + self.cis*np.sin(2*(self.omega0+v))
+        takdot = np.sin(ek)*ekdot*(1.0+self.e*np.cos(tak))/(np.sin(tak)*(1.0-self.e*np.cos(ek)))
+
+        phik = tak + self.omega0
+
+        corr_u = self.cws*np.sin(2.0*phik) + self.cwc*np.cos(2.0*phik)
+        corr_r = self.crs*np.sin(2.0*phik) + self.crc*np.cos(2.0*phik)
+        corr_i = self.cis*np.sin(2.0*phik) + self.cic*np.cos(2.0*phik)
+
+        uk = phik + corr_u
+        rk = A*(1.0 - self.e*np.cos(ek)) + corr_r
+        ik = self.i0 + self.i_dot * tk + corr_i
+        ukdot = takdot +2.0*(self.cws*np.cos(2.0*uk)-self.cwc*np.sin(2.0*uk))*takdot
+        rkdot = A*self.e*np.sin(ek)*n/(1.0-self.e*np.cos(ek)) + 2.0*(self.crs*np.cos(2.0*uk)-self.crc*np.sin(2.0*uk))*takdot
+        ikdot = self.i_dot + (self.cis*np.cos(2.0*uk)-self.cic*np.sin(2.0*uk))*2.0*takdot
+
+        xpk = rk*np.cos(uk)
+        ypk = rk*np.sin(uk)
+
+        xpkdot = rkdot * np.cos(uk) - ypk * ukdot
+        ypkdot = rkdot * np.sin(uk) + xpk * ukdot
+
+        omegak = self.omega_ascension0 + (self.omega_dot_ascension-bOMEGAE84)*tk - bOMEGAE84*self.toe
+
+        omegakdot = (self.omega_dot_ascension - bOMEGAE84)
+
+        xk = xpk*np.cos(omegak) - ypk * np.sin(omegak)*np.cos(ik)
+        yk = xpk*np.sin(omegak) + ypk * np.cos(omegak)*np.cos(ik)
+        zk = ypk*np.sin(ik)
+
+        xkdot = ( xpkdot-ypk*np.cos(ik)*omegakdot ) * np.cos(omegak) - ( xpk*omegakdot+ypkdot*np.cos(ik)-ypk*np.sin(ik)*ikdot )*np.sin(omegak)
+        ykdot = ( xpkdot-ypk*np.cos(ik)*omegakdot ) * np.sin(omegak) + ( xpk*omegakdot+ypkdot*np.cos(ik)-ypk*np.sin(ik)*ikdot )*np.cos(omegak)
+        zkdot = ypkdot * np.sin(ik) + ypk * np.cos(ik)*ikdot
+
         
-        # Compute  the  right  ascension
-        omega_ascension = self.omega_ascension0 + (self.omega_dot_ascension-omega_e)*self.toe
-
-        # Convert satellite position from orbital frame to ECEF frame
-        r_vect = np.array([r*np.cos(v),r*np.sin(v),0])
-
-        # Rotation matrix
-        R = np.asarray([[np.cos(omega_ascension)*np.cos(omega)-np.sin(omega_ascension)*np.sin(omega)*np.cos(i), -np.cos(omega_ascension)*np.sin(omega)-np.sin(omega_ascension)*np.cos(omega)*np.cos(i), np.sin(omega_ascension)*np.sin(i)]
-        ,[np.sin(omega_ascension)*np.cos(omega)+np.cos(omega_ascension)*np.sin(omega)*np.cos(i), -np.sin(omega_ascension)*np.sin(omega)+np.cos(omega_ascension)*np.cos(omega)*np.cos(i), -np.cos(omega_ascension)*np.sin(i)]
-        ,[np.sin(omega)*np.sin(i), np.cos(omega)*np.sin(i), np.cos(i)]])
-        
-        return (-1)*np.dot(R,r_vect)
+        return np.array([xk, yk, zk, xkdot ,ykdot ,zkdot ])
 
     def get_velocity(self,delta_t=1):
-        pos1 = self.get_position()
-        pos2 = self.get_position(self.t_data+delta_t)
-        return (pos2-pos1)/(delta_t)
-        
+        pos1 = self.get_pos(self.t_data - delta_t)
+        pos2 = self.get_pos(self.t_data)
 
+        return (pos2-pos1)/(delta_t)
+
+
+
+
+    def velocity_evolution(self):
+        t_out = self.toe * 2*60*60
+        
+        velocities = [ np.linalg.norm(self.get_velocity(t)) for t in range(int(self.toe + 1), int(t_out)) ]
+
+        plt.plot(list(range(self.toe + 1, t_out)), velocities, label=self.name)
+        plt.grid()
+
+
+
+
+
+    def show_satelite_epheremide(self):
+        print('*** --- ***')
+        print("name", self.name)
+        print("sqrt_a", self.sqrt_a)
+        print("toe", self.toe)
+        print("mu0", self.mu0)
+        print("e", self.e)
+        print("delta_n", self.delta_n)
+        print("omega0 ", self.omega0)
+        print("cws ", self.cws)
+        print("cwc ",self.cwc)
+        print("crs", self.crs)
+        print('crc', self.crc )
+        print("cis", self.cis)
+        print("cic", self.cic)
+        print("i_dot", self.i_dot)
+        print("i0,", self.i0 )
+        print("omega_ascension0", self.omega_ascension0   )
+        print("omega_dot_ascension", self.omega_dot_ascension )
+        print()
     
 if __name__ == "__main__":
-    sat = Satellite(208784, 208789, 0.128612756881*10,0.489020369661*10**-8,0.260362529662*10**-2,0.7931942133,0.622682273388*10**-5,0.1460313797*10**-5,0.515365547943*10**4,0.25971875*10**3,0.2853125*10**2,-0.204890966415*10**-7,0.577419996262*10**-7,0.108886242411*10,-0.815426822943*10**-8,0.963852456438,0.431089385175*10**-9,0)
-    print(sat.get_position()/1000)
-    print(np.linalg.norm(sat.get_velocity())*3.6)
+    pass
     # pos2 = self.get_sat_pose(0.2160*10**6,216005,0.23388256954*10, 0.487698886045*10**-8, 0.260366254952*10**-2, 0.2081*10**4, 0.624172389507*10**-5, 0.157766044140*10**-5, 0.515365465546*10**4, 1, 0.31781250*10**2, -0.409781932831*10**-7, -0.2421438694*10**-7, 0.108880357969*10, -0.808605110220*10**-8, 0.963855990848, 0.468948104999*10**-9)

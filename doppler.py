@@ -2,6 +2,15 @@ import numpy as np
 from mpl_toolkits.mplot3d import Axes3D
 import matplotlib.pyplot as plt
 from utils.nav_parser import parse_nav_file
+import matplotlib.pyplot as plt
+from mpl_toolkits.mplot3d import Axes3D
+import pandas as pd
+
+from utils.pos_file_converter import parse_positions
+from utils.parserRinex import obsToDataframeFinal
+from utils.satelite_manager import get_satelites
+
+
 
 # ftp://cddis.gsfc.nasa.gov/pub/gps/products/wwww/igswwwwd.sp3.Z | template ephemeris
 
@@ -23,6 +32,41 @@ class Doppler:
         c = 299792458
         ai = self.get_line_of_sight(ri,ru)
         return (c*Di)/f_ti - np.inner(vi,ai)
+    def visualize(self, ru:np.ndarray, sats:list, t:int):
+
+        indexes = [s.name for s in sats]
+        indexes.append('usr')
+
+        positions = []
+
+            x, y, z, vx, vy, vz = s.get_pos(t)
+            # vx, vy, vz = s.get_velocity()
+            # print("//// V = ", np.linalg.norm([vx, vy, vz])*3.6)
+            # exit()
+
+            positions.append([ x, y, z, vx, vy, vz])
+        for s in sats:
+        positions.append([ru[0], ru[1], ru[2], 0, 0, 0])
+        df = pd.DataFrame(np.array(positions), columns=['x','y','z', 'vx', 'vy', 'vz'], index=indexes)
+
+
+
+        fig = plt.figure()
+        ax = Axes3D(fig)
+
+        for i in range( df.shape[0] ): #plot each point + it's index as text above
+        # print(df)
+        # print(np.linalg.norm(sats[0].get_velocity(t)))
+            x,y,z = df['x'][i], df['y'][i] , df['z'][i]
+            vx, vy, vz = df['vx'][i]*3.6, df['vy'][i]*3.6 , df['vz'][i]*3.6
+
+            ax.scatter(x, y, z, color='b') 
+            ax.text( x, y, z,  '%s' % (str(indexes[i])), size=20, zorder=1,  
+            color='k') 
+
+            ax.quiver(x, y, z, vx, vy, vz  )
+
+        plt.show()
 
     def get_line_of_sight(self,ri,ru):
         return (ri-ru)/np.linalg.norm(ri-ru)
@@ -33,9 +77,6 @@ class Doppler:
         f_ti = 1575.42*10**6
         
 
-        Di1 = 1319.955
-        Di2 = -513.404
-        Di3 = -2687.413
 
 
         k1 = self.__get_K_n(f_ti,Di1,self.ri1,ru,self.vi1)
@@ -66,20 +107,38 @@ class Doppler:
 
         print(v, "m/s")
         
-        return v
+        # print('FINAL VELOCITY :', np.linalg.norm(v)*3.6, 'km/h')
+
+
+    def test_velocity(self):
+        di = [1319.955, -513.404, -2687.413]
+
+        ru = np.array([4043547.78553915, 254207.686387644, 4909623.02474359])
+
+        sats = [self.sats[i] for i  in [9, 0, 10]]
+
+        
+        doppler = Doppler()
+        v = doppler.get_usr_velocity(208800, ru, sats,di, [1.57542*10**9]*3  )
+
+        # sats[0].show_trajetcory()
+
+        # doppler.draw_velocity_evolution()
+       
+       
 
 
 
 if __name__ == "__main__":
-    sats = parse_nav_file("data/Very_Bad_Trip/Belgique/autoroute_plus_tunnel.nav")
-    # print(sats[1].name)
-    # print(sats[1].get_position()/1000)
-    # print(np.linalg.norm(sats[1].get_velocity())*3.6)
-    # velocity = Doppler(208784,1574762406,1.28612756881,0.489020369661*10**-8,0.260362529662*10**-2,0.7931942133,0.622682273388*10**-5,0.1460313797*10**-5,0.515365547943*10**4,0.25971875*10**3,0.2853125*10**2,-0.204890966415*10**-7,0.577419996262*10**-7,0.108886242411*10,-0.815426822943*10**-8,0.963852456438,0.431089385164*10**-9)
-    doppler = Doppler()
-    doppler.get_usr_velocity()
+    sats = parse_nav_file("test_data/autoroute_plus_tunnel.nav")
 
+    doppler = Doppler() 
 
+    doppler.test_velocity()
+
+    # doppler = Doppler()
+    # doppler.draw_velocity_evolution()
+    # doppler.get_usr_velocity()
 
 
 

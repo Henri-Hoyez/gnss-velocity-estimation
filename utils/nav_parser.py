@@ -41,7 +41,7 @@ def parse_gps_message(message:list):
     nav_data = make_matrix_from_nav_message(message)
     toe = nav_data[3][0]
     t_data = toe                                     # I make t_data = t_toe beacause I don't know t_data
-    mu0 = nav_data[1][3]                             # TODO: check these values
+    mu0 = nav_data[1][3]                             
     delta_n = nav_data[1][2]
     e = nav_data[2][1]
     omega0 = nav_data[4][2]
@@ -58,12 +58,14 @@ def parse_gps_message(message:list):
     i_dot = nav_data[5][0]
     clock_drift = nav_data[0][2]
 
+    clock_drift = nav_data[0][2]
+
 
     my_sat = Satellite(float(toe), float(t_data), float(mu0), float(delta_n), float(e), 
     float(omega0), float(cws), float(cwc), float(sqrt_a), float(crc), float(crs), float(cic), 
     float(cis), float(omega_ascension0), float(omega_dot_ascension), float(i0), float(i_dot), float(clock_drift))
 
-    my_sat.set_name(gps_name)
+    my_sat.set_name(gps_name.replace(" ","0"))
     my_sat.set_ephemeris_date(nav_date)
     my_sat.set_type("GPS")
 

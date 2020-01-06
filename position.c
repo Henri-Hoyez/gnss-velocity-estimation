@@ -19,8 +19,17 @@
      .200000000000D+01  .000000000000D+00 -.651925802231D-08  .276000000000D+03
      .865800000000D+05  .000000000000D+00  .000000000000D+00  .000000000000D+00
 
+for test purposes:
 
-     
+G 3 2019 11 26  9 59 44 -.426894985139E-04 -.613908923697E-11  .000000000000E+00
+      .700000000000E+01  .285312500000E+02  .489020369661E-08  .128612756881E+01
+      .146031379700E-05  .260362529662E-02  .622682273388E-05  .515365547943E+04
+      .208784000000E+06 -.204890966415E-07  .108886242411E+01  .577419996262E-07
+      .963852456438E+00  .285312500000E+03  .793194213300E+00 -.815426822943E-08
+      .431089385175E-09  .100000000000E+01  .208100000000E+04  .000000000000E+00
+      .200000000000E+01  .000000000000E+00  .232830643654E-08  .700000000000E+01
+      .203226000000E+06  .400000000000E+01
+
 
 
 */
@@ -32,24 +41,24 @@
 
 void main(void)
 {
-long double roota                    =  0.515365547943e4;
-long double toe                      =  208784;
-long double m0                       =  1.28612756881;
-long double e                        =  0.260362529662e-2;
-long double delta_n                  =  0.489020369661e-8;
-long double smallomega               =  0.7931942133;
-long double cus                      =  0.622682263388e-5; 
-long double cuc                      =  0.1460313797e-5; 
-long double crs                      =  0.2853125e2; 
-long double crc                      =  0.25971875e3; 
-long double cis                      =  0.57741996262e-7;
-long double cic                      =  -0.204890966415e-7; 
-long double idot                     =  0.431089385164e-9; 
-long double i0                       =  0.963852456438; 
-long double bigomega0                =  0.108886242411e1; 
+long double roota                    =  .515365547943e+04;
+long double toe                      =  .208784000000e+06;
+long double m0                       =  .128612756881e+01;
+long double e                        =  .260362529662E-02;
+long double delta_n                  =  .489020369661e-08;
+long double smallomega               =  .793194213300e+00;
+long double cus                      =  .622682273388E-05; 
+long double cuc                      =  .146031379700E-05; 
+long double crs                      =  .285312500000E+02; 
+long double crc                      =  .285312500000E+03; 
+long double cis                      =  .577419996262E-07;
+long double cic                      =  -.204890966415e-07; 
+long double idot                     =  .431089385175e-09; 
+long double i0                       =  .963852456438E+00; 
+long double bigomega0                =  .108886242411e+01; 
 long double earthrate                =  bOMEGAE84;
-long double bigomegadot              = -0.815426822943e-8; 
-long double t                        =  209684;
+long double bigomegadot              = -.815426822943E-08; 
+long double t                        =  381600;
 long double A;
 long double n0, n;
 long double tk;
@@ -69,25 +78,26 @@ n = n0 + delta_n;
 mk = m0 + n*tk;
 
 
-
-printf("%Lf \n",n);
-
-printf("%Lf \n",mk);
 mkdot = n;
 ek = mk;
+
 for(iter=0; iter<7; iter++) ek = mk + e*sin(ek);  //Overkill for small e
+
 ekdot = mkdot/(1.0 - e*cos(ek));
 //In the line, below, tak is the true anomaly (which is nu in the ICD-200).
 tak = atan2( sqrt(1.0-e*e)*sin(ek), cos(ek)-e);
 takdot = sin(ek)*ekdot*(1.0+e*cos(tak))/(sin(tak)*(1.0-e*cos(ek)));
 
+
 phik = tak + smallomega;
 corr_u = cus*sin(2.0*phik) + cuc*cos(2.0*phik);
 corr_r = crs*sin(2.0*phik) + crc*cos(2.0*phik);
 corr_i = cis*sin(2.0*phik) + cic*cos(2.0*phik);
+
 uk = phik + corr_u;
 rk = A*(1.0-e*cos(ek)) + corr_r;
 ik = i0 + idot*tk + corr_i;
+
 
 ukdot = takdot +2.0*(cus*cos(2.0*uk)-cuc*sin(2.0*uk))*takdot;
 rkdot = A*e*sin(ek)*n/(1.0-e*cos(ek)) + 2.0*(crs*cos(2.0*uk)-crc*sin(2.0*uk))*takdot;
@@ -96,12 +106,17 @@ ikdot = idot + (cis*cos(2.0*uk)-cic*sin(2.0*uk))*2.0*takdot;
 xpk = rk*cos(uk);
 ypk = rk*sin(uk);
 
+
+
 xpkdot = rkdot*cos(uk) - ypk*ukdot;
 ypkdot = rkdot*sin(uk) + xpk*ukdot;
 
+
 omegak = bigomega0 + (bigomegadot-earthrate)*tk - earthrate*toe;
 
+
 omegakdot = (bigomegadot-earthrate);
+
 
 xk = xpk*cos(omegak) - ypk*sin(omegak)*cos(ik);
 yk = xpk*sin(omegak) + ypk*cos(omegak)*cos(ik);
@@ -112,6 +127,12 @@ xkdot = ( xpkdot-ypk*cos(ik)*omegakdot )*cos(omegak)
 ykdot = ( xpkdot-ypk*cos(ik)*omegakdot )*sin(omegak)
         + ( xpk*omegakdot+ypkdot*cos(ik)-ypk*sin(ik)*ikdot )*cos(omegak);
 zkdot = ypkdot*sin(ik) + ypk*cos(ik)*ikdot;
+
+long double v = sqrt(( xkdot*xkdot + ykdot*ykdot + zkdot*zkdot ))*3.6;
+
+printf("ik %0.9LF \n", v);
+
+
 
 //Results follow.
 

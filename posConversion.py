@@ -5,10 +5,10 @@ import matplotlib.pyplot as plt
 
 global windowSize
 windowSize=10
+
 def nmeaSpeed(positionFile):
     data=[]
     file=open(positionFile)
-    compteur=0
     ligne=file.readline()
     while(ligne!=""):
         if("$GPRMC" in ligne):

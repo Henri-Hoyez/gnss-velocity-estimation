@@ -2,5 +2,6 @@
 data/
 test_data/
 utils/__pycache__/
+doc/
 
 *.pyc
