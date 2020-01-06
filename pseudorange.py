@@ -1,6 +1,4 @@
 import numpy as np
-from mpl_toolkits.mplot3d import Axes3D
-import matplotlib.pyplot as plt
 from utils.nav_parser import parse_nav_file
 
 # ftp://cddis.gsfc.nasa.gov/pub/gps/products/wwww/igswwwwd.sp3.Z | template ephemeris
@@ -13,58 +11,53 @@ class Doppler:
 
         self.ri1 = sats[10].get_position()
         self.ri2 = sats[9].get_position()
-        self.ri3 = -sats[0].get_position()
-        
+        self.ri3 = sats[0].get_position()
+        print(self.ri1)
+        # print(self.ri2)
         self.vi1 = sats[10].get_velocity()
         self.vi2 = sats[9].get_velocity()
-        self.vi3 = -sats[0].get_velocity()
+        self.vi3 = sats[0].get_velocity()
+
+        self.cd1 = sats[10].clock_drift
+        self.cd2 = sats[9].clock_drift
+        self.cd3 = sats[0].clock_drift
         
-    def __get_K_n(self,f_ti,Di,ri,ru,vi):
+
+    
+    def __get_K_n(self,rho,clock_drift,ri,ru,vi):
         c = 299792458
-        ai = self.get_line_of_sight(ri,ru)
-        return (c*Di)/f_ti - np.inner(vi,ai)
+        a = self.get_line_of_sight(ri,ru)
+        print(a)
+        return -rho - c*clock_drift + np.vdot(vi,a)
 
     def get_line_of_sight(self,ri,ru):
         return (ri-ru)/np.linalg.norm(ri-ru)
 
     def get_usr_velocity(self):
-        #G6 et G23 // 10 & 9
-        ru = np.array([4043743.6490  ,  261011.8175 ,  4909156.8423])
+        #G06 G23 G03 // 10 & 9 & 0
+        # origin obs : 4049390.9248   215421.6043  4906680.8162
+        c = 299792458
         f_ti = 1575.42*10**6
-        
+        ru = np.array([4043730.5731   ,261041.2499  , 4909152.9334])*0
+        rho1 = -c*1540.719/f_ti
+        rho2 = -c*-207.044/f_ti
+        rho3 = -c*386.173/f_ti
 
-        Di1 = 1319.955
-        Di2 = -513.404
-        Di3 = -2687.413
-
-
-        k1 = self.__get_K_n(f_ti,Di1,self.ri1,ru,self.vi1)
-        k2 = self.__get_K_n(f_ti,Di2,self.ri2,ru,self.vi2)
-        k3 = self.__get_K_n(f_ti,Di3,self.ri3,ru,self.vi3)
+        k1 = self.__get_K_n(rho1,self.cd1,self.ri1,ru,self.vi1)
+        k2 = self.__get_K_n(rho2,self.cd2,self.ri2,ru,self.vi2)
+        k3 = self.__get_K_n(rho3,self.cd3,self.ri3,ru,self.vi3)
 
         a1 = self.get_line_of_sight(self.ri1,ru)
         a2 = self.get_line_of_sight(self.ri2,ru)
         a3 = self.get_line_of_sight(self.ri3,ru)
 
-        x = 0
-        y = 0
-        z = 0
-        #print(x.shape,"||",a1.shape)
-        fig = plt.figure()
-        ax = fig.gca(projection='3d')
-        ax.quiver(x,y,z, a1, a2, a3,length=0.1, normalize=True)
-        # ax.set_xlim([-1, 1])
-        # ax.set_ylim([-1, 1])
-        # ax.set_zlim([-1, 1])
-        # plt.show()
-
-
         K = np.array([k1,k2,k3])
         X = np.array([a1,a2,a3])
-        
-        v = np.linalg.solve(X,K)
+        v = np.linalg.lstsq(X,K,rcond=-1)
+        # print(np.linalg.inv(X))
+        print(K)
 
-        print(v, "m/s")
+        print("////",np.linalg.norm(v[0]))
         
         return v
 
@@ -78,8 +71,3 @@ if __name__ == "__main__":
     # velocity = Doppler(208784,1574762406,1.28612756881,0.489020369661*10**-8,0.260362529662*10**-2,0.7931942133,0.622682273388*10**-5,0.1460313797*10**-5,0.515365547943*10**4,0.25971875*10**3,0.2853125*10**2,-0.204890966415*10**-7,0.577419996262*10**-7,0.108886242411*10,-0.815426822943*10**-8,0.963852456438,0.431089385164*10**-9)
     doppler = Doppler()
     doppler.get_usr_velocity()
-
-
-
-
-
