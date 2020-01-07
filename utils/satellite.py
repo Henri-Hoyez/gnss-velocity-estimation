@@ -62,15 +62,40 @@ class Satellite:
 
 
     def get_pos(self, t_obs:int=None):
-        self.show_satelite_epheremide()
-        exit()
+        
+
+
+
 
         t_data = t_obs if t_obs != None else self.t_data
 
         bOMEGAE84 = 7.2921151467*10**-5
         bGM84 = 3.986005e14
 
+        # self.sqrt_a     =  .515365547943e+04
+        # self.toe        =  .208784000000e+06
+        # self.mu0        =  .128612756881e+01
+        # self.e          =  .260362529662E-02
+        # self.delta_n    =  .489020369661e-08
+        # self.omega0     =  .793194213300e+00
+        # self.cws        =  .622682273388E-05
+        # self.cwc        =  .146031379700E-05
+        # self.crs        =  .285312500000E+02
+        # self.crc        =  .285312500000E+03
+        # self.cis        =  .577419996262E-07
+        # self.cic        =  -.204890966415e-07
+        # self.i_dot      =  .431089385175e-09
+        # self.i0         =  .963852456438E+00
+        # self.omega_ascension0  =  .108886242411e+01
+        # self.omega_dot_ascension= -.815426822943E-08
+        # t_data = 381600
+        self.convert_c_language(t_data)
+
+
+
         A = self.sqrt_a * self.sqrt_a
+        
+
         n0 = np.sqrt(bGM84/(A*A*A))
         tk = t_data - self.toe
         n = n0 + self.delta_n
@@ -100,34 +125,66 @@ class Satellite:
         rkdot = A*self.e*np.sin(ek)*n/(1.0-self.e*np.cos(ek)) + 2.0*(self.crs*np.cos(2.0*uk)-self.crc*np.sin(2.0*uk))*takdot
         ikdot = self.i_dot + (self.cis*np.cos(2.0*uk)-self.cic*np.sin(2.0*uk))*2.0*takdot
 
+
         xpk = rk*np.cos(uk)
         ypk = rk*np.sin(uk)
 
         xpkdot = rkdot * np.cos(uk) - ypk * ukdot
         ypkdot = rkdot * np.sin(uk) + xpk * ukdot
 
+
         omegak = self.omega_ascension0 + (self.omega_dot_ascension-bOMEGAE84)*tk - bOMEGAE84*self.toe
 
+
         omegakdot = (self.omega_dot_ascension - bOMEGAE84)
+
 
         xk = xpk*np.cos(omegak) - ypk * np.sin(omegak)*np.cos(ik)
         yk = xpk*np.sin(omegak) + ypk * np.cos(omegak)*np.cos(ik)
         zk = ypk*np.sin(ik)
 
+
         xkdot = ( xpkdot-ypk*np.cos(ik)*omegakdot ) * np.cos(omegak) - ( xpk*omegakdot+ypkdot*np.cos(ik)-ypk*np.sin(ik)*ikdot )*np.sin(omegak)
         ykdot = ( xpkdot-ypk*np.cos(ik)*omegakdot ) * np.sin(omegak) + ( xpk*omegakdot+ypkdot*np.cos(ik)-ypk*np.sin(ik)*ikdot )*np.cos(omegak)
         zkdot = ypkdot * np.sin(ik) + ypk * np.cos(ik)*ikdot
 
+        print( "BCpos: t, xk, yk, zk:", t_data, xk, yk, zk )
+        print("BCvel: t, Vxk, Vyk, Vzk:", t_data, xkdot, ykdot, zkdot)
+        print("v= ", np.linalg.norm([ xkdot, ykdot, zkdot])*3.6 )
+        print()
+        # exit()
+
         
-        return np.array([xk, yk, zk, xkdot ,ykdot ,zkdot ])
+        return np.array([xk, yk, zk, xkdot , ykdot , zkdot ])
 
     def get_velocity(self,delta_t=1):
         pos1 = self.get_pos(self.t_data - delta_t)
+
         pos2 = self.get_pos(self.t_data)
 
         return (pos2-pos1)/(delta_t)
 
 
+    def convert_c_language(self, t_data):
+        print("long double roota                    =  "+ str(self.sqrt_a) + ";")
+        print("long double toe                      =  "+ str(self.toe) + ";")
+        print("long double m0                       =  "+ str(self.mu0) + ";")
+        print("long double e                        =  "+ str(self.e) + ";")
+        print("long double delta_n                  =  "+ str(self.delta_n) + ";")
+        print("long double smallomega               =  "+ str(self.omega0) + ";")
+        print("long double cus                      =  "+ str(self.cws) + ";")
+        print("long double cuc                      =  "+ str(self.cwc) + ";")
+        print("long double crs                      =  "+ str(self.crs) + ";")
+        print("long double crc                      =  "+ str(self.crc) + ";")
+        print("long double cis                      =  "+ str(self.cis) + ";")
+        print("long double cic                      =  "+ str(self.cic) + ";")
+        print("long double idot                     =  "+ str(self.i_dot) + ";")
+        print("long double i0                       =  "+ str(self.i0) + ";")
+        print("long double bigomega0                =  "+ str(self.omega_ascension0) + ";")
+        print("long double earthrate                =  bOMEGAE84;")
+        print("long double bigomegadot              =  "+ str(self.omega_dot_ascension) +";")
+        print("long double t                        =  "+ str(self.t_data) +";")
+        print()
 
 
     def velocity_evolution(self):
@@ -136,6 +193,7 @@ class Satellite:
         velocities = [ np.linalg.norm(self.get_velocity(t)) for t in range(int(self.toe + 1), int(t_out)) ]
 
         plt.plot(list(range(self.toe + 1, t_out)), velocities, label=self.name)
+
         plt.grid()
 
 

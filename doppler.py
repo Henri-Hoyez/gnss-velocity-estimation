@@ -153,11 +153,9 @@ class Doppler:
         
         print('v_usr = ', v)
 
-        # for s in sats:
-        #     s.velocity_evolution()
-        # plt.show()
+        print('||v||  =', np.linalg.norm(v)*3.6, 'km/h')
+        print("||Sat_Valocities||: ", [np.linalg.norm(s.get_velocity(t)[3:]) for s in sats])
 
-        # print('||v||  =', np.linalg.norm(v)*3.6, 'km/h')
 
 
         # fig = plt.figure()
@@ -234,9 +232,7 @@ class Doppler:
 
         sats = [self.sats[i] for i  in [9, 0, 10]]
 
-        
-        doppler = Doppler()
-        v = doppler.get_usr_velocity(208800, ru, sats,di, [1.57542*10**9]*3  )
+        v = self.get_usr_velocity(208800, ru, sats,di, [1.57542*10**9]*3  )
 
         # sats[0].show_trajetcory()
 
