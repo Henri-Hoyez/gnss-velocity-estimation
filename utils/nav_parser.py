@@ -56,7 +56,6 @@ def parse_gps_message(message:list):
     omega_dot_ascension = nav_data[4][3]
     i0 = nav_data[4][0]
     i_dot = nav_data[5][0]
-    clock_drift = nav_data[0][2]
 
     clock_drift = nav_data[0][2]
 

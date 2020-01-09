@@ -41,24 +41,44 @@ G 3 2019 11 26  9 59 44 -.426894985139E-04 -.613908923697E-11  .000000000000E+00
 
 void main(void)
 {
-long double roota                    =  .515365547943e+04;
-long double toe                      =  .208784000000e+06;
-long double m0                       =  .128612756881e+01;
-long double e                        =  .260362529662E-02;
-long double delta_n                  =  .489020369661e-08;
-long double smallomega               =  .793194213300e+00;
-long double cus                      =  .622682273388E-05; 
-long double cuc                      =  .146031379700E-05; 
-long double crs                      =  .285312500000E+02; 
-long double crc                      =  .285312500000E+03; 
-long double cis                      =  .577419996262E-07;
-long double cic                      =  -.204890966415e-07; 
-long double idot                     =  .431089385175e-09; 
-long double i0                       =  .963852456438E+00; 
-long double bigomega0                =  .108886242411e+01; 
+// long double roota                    =  .515365547943e+04;
+// long double toe                      =  .208784000000e+06;
+// long double m0                       =  .128612756881e+01;
+// long double e                        =  .260362529662E-02;
+// long double delta_n                  =  .489020369661e-08;
+// long double smallomega               =  .793194213300e+00;
+// long double cus                      =  .622682273388E-05; 
+// long double cuc                      =  .146031379700E-05; 
+// long double crs                      =  .285312500000E+02; 
+// long double crc                      =  .285312500000E+03; 
+// long double cis                      =  .577419996262E-07;
+// long double cic                      =  -.204890966415e-07; 
+// long double idot                     =  .431089385175e-09; 
+// long double i0                       =  .963852456438E+00; 
+// long double bigomega0                =  .108886242411e+01; 
+// long double earthrate                =  bOMEGAE84;
+// long double bigomegadot              = -.815426822943E-08; 
+// long double t                        =  381600;
+
+long double roota                    =  5153.65547943;
+long double toe                      =  208784.0;
+long double m0                       =  1.28612756881;
+long double e                        =  0.00260362529662;
+long double delta_n                  =  4.89020369661e-09;
+long double smallomega               =  0.7931942133;
+long double cus                      =  6.22682273388e-06;
+long double cuc                      =  1.460313797e-06;
+long double crs                      =  28.53125;
+long double crc                      =  259.71875;
+long double cis                      =  5.77419996262e-08;
+long double cic                      =  -2.04890966415e-08;
+long double idot                     =  4.31089385175e-10;
+long double i0                       =  0.963852456438;
+long double bigomega0                =  1.08886242411;
 long double earthrate                =  bOMEGAE84;
-long double bigomegadot              = -.815426822943E-08; 
-long double t                        =  381600;
+long double bigomegadot              =  -8.15426822943e-09;
+long double t                        =  208784.0;
+
 long double A;
 long double n0, n;
 long double tk;
@@ -76,6 +96,7 @@ n0 = sqrt(bGM84/(A*A*A));  //bGM84 is what the ICD-200 calls Greek mu
 tk = t - toe;              //t is the time of the pos. & vel. request.
 n = n0 + delta_n;
 mk = m0 + n*tk;
+
 
 
 mkdot = n;
@@ -103,6 +124,7 @@ ukdot = takdot +2.0*(cus*cos(2.0*uk)-cuc*sin(2.0*uk))*takdot;
 rkdot = A*e*sin(ek)*n/(1.0-e*cos(ek)) + 2.0*(crs*cos(2.0*uk)-crc*sin(2.0*uk))*takdot;
 ikdot = idot + (cis*cos(2.0*uk)-cic*sin(2.0*uk))*2.0*takdot;
 
+
 xpk = rk*cos(uk);
 ypk = rk*sin(uk);
 
@@ -122,32 +144,33 @@ xk = xpk*cos(omegak) - ypk*sin(omegak)*cos(ik);
 yk = xpk*sin(omegak) + ypk*cos(omegak)*cos(ik);
 zk =                   ypk*sin(ik);
 
+
 xkdot = ( xpkdot-ypk*cos(ik)*omegakdot )*cos(omegak)
         - ( xpk*omegakdot+ypkdot*cos(ik)-ypk*sin(ik)*ikdot )*sin(omegak);
 ykdot = ( xpkdot-ypk*cos(ik)*omegakdot )*sin(omegak)
         + ( xpk*omegakdot+ypkdot*cos(ik)-ypk*sin(ik)*ikdot )*cos(omegak);
 zkdot = ypkdot*sin(ik) + ypk*cos(ik)*ikdot;
 
+
 long double v = sqrt(( xkdot*xkdot + ykdot*ykdot + zkdot*zkdot ))*3.6;
 
-printf("ik %0.9LF \n", v);
 
 
 
 //Results follow.
 
-printf("BCpos: t, xk, yk, zk: %9.3Lf %21.11Lf %21.11Lf %21.11Lf\n", t, xk, yk, zk );
+printf("BCpos: t, xk, yk, zk: %9.3Lf %21.11Lf %21.11Lf %21.11Lf\n\r", t, xk, yk, zk );
 //BCpos: t, xk, yk, zk: 86400.000 -12611434.19782218519 -13413103.97797041226  19062913.07357876760
-printf("BCvel: t, Vxk, Vyk, Vzk: %9.3Lf %16.10Lf %16.10Lf %16.10Lf\n", t, xkdot, ykdot, zkdot );
+printf("BCvel: t, Vxk, Vyk, Vzk: %9.3Lf %16.10Lf %16.10Lf %16.10Lf\n\r", t, xkdot, ykdot, zkdot );
 //BCvel: t, Vxk, Vyk, Vzk: 86400.000   266.2803795674 -2424.7683468482 -1529.7620784616
 
 //Use the positions at 86400.000+0.005 and 86400.000-0.005 for numerical computation check.
 //Perfect agreement is precluded because we have a limited precision machine.
-printf("xdotnumerical.01: %20.12lf\n", (-12611432.86642217014 - (-12611435.52922596496) )/0.01 );
+// printf("xdotnumerical.01: %20.12lf\n\r", (-12611432.86642217014 - (-12611435.52922596496) )/0.01 );
 //xdotnumerical.01:     266.280379332602
-printf("ydotnumerical.01: %20.12lf\n", (-13413116.10180993562 - (-13413091.85412646334) )/0.01 );
-//ydotnumerical.01:   -2424.768347293139
-printf("zdotnumerical.01: %20.12lf\n", ( 19062905.42476327563 - ( 19062920.72238405509) )/0.01 );
+// printf("ydotnumerical.01: %20.12lf\n\r", (-13413116.10180993562 - (-13413091.85412646334) )/0.01 );
+// ydotnumerical.01:   -2424.768347293139
+// printf("zdotnumerical.01: %20.12lf\n\r", ( 19062905.42476327563 - ( 19062920.72238405509) )/0.01 );
 //zdotnumerical.01:   -1529.762077704072
 
 }
