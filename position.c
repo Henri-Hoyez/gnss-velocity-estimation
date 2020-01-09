@@ -60,25 +60,24 @@ void main(void)
 // long double bigomegadot              = -.815426822943E-08; 
 // long double t                        =  381600;
 
-
-long double roota                    =  5153.70772171;
-long double toe                      =  208800.0;
-long double m0                       =  2.85246230121;
-long double e                        =  0.00159307685681;
-long double delta_n                  =  3.90944855851e-09;
-long double smallomega               =  -1.21199200808;
-long double cus                      =  1.24424695969e-05;
-long double cuc                      =  -3.85940074921e-06;
-long double crs                      =  -78.09375;
-long double crc                      =  148.21875;
-long double cis                      =  2.23517417908e-08;
-long double cic                      =  1.02445483208e-07;
-long double idot                     =  2.90726395636e-10;
-long double i0                       =  0.977921036782;
-long double bigomega0                =  0.0393993740792;
+long double roota                    =  5153.65547943;
+long double toe                      =  208784.0;
+long double m0                       =  1.28612756881;
+long double e                        =  0.00260362529662;
+long double delta_n                  =  4.89020369661e-09;
+long double smallomega               =  0.7931942133;
+long double cus                      =  6.22682273388e-06;
+long double cuc                      =  1.460313797e-06;
+long double crs                      =  28.53125;
+long double crc                      =  259.71875;
+long double cis                      =  5.77419996262e-08;
+long double cic                      =  -2.04890966415e-08;
+long double idot                     =  4.31089385175e-10;
+long double i0                       =  0.963852456438;
+long double bigomega0                =  1.08886242411;
 long double earthrate                =  bOMEGAE84;
-long double bigomegadot              =  -7.56138639067e-09;
-long double t                        =  208800.0;
+long double bigomegadot              =  -8.15426822943e-09;
+long double t                        =  208784.0;
 
 long double A;
 long double n0, n;
@@ -167,11 +166,11 @@ printf("BCvel: t, Vxk, Vyk, Vzk: %9.3Lf %16.10Lf %16.10Lf %16.10Lf\n\r", t, xkdo
 
 //Use the positions at 86400.000+0.005 and 86400.000-0.005 for numerical computation check.
 //Perfect agreement is precluded because we have a limited precision machine.
-printf("xdotnumerical.01: %20.12lf\n\r", (-12611432.86642217014 - (-12611435.52922596496) )/0.01 );
+// printf("xdotnumerical.01: %20.12lf\n\r", (-12611432.86642217014 - (-12611435.52922596496) )/0.01 );
 //xdotnumerical.01:     266.280379332602
-printf("ydotnumerical.01: %20.12lf\n\r", (-13413116.10180993562 - (-13413091.85412646334) )/0.01 );
-//ydotnumerical.01:   -2424.768347293139
-printf("zdotnumerical.01: %20.12lf\n\r", ( 19062905.42476327563 - ( 19062920.72238405509) )/0.01 );
+// printf("ydotnumerical.01: %20.12lf\n\r", (-13413116.10180993562 - (-13413091.85412646334) )/0.01 );
+// ydotnumerical.01:   -2424.768347293139
+// printf("zdotnumerical.01: %20.12lf\n\r", ( 19062905.42476327563 - ( 19062920.72238405509) )/0.01 );
 //zdotnumerical.01:   -1529.762077704072
 
 }

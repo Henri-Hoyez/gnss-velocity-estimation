@@ -5,4 +5,4 @@ utils/__pycache__/
 doc/
 
 *.pyc
-*.exe
+*.exe   

@@ -7,6 +7,8 @@ import pandas as pd
 from utils.pos_file_converter import parse_positions
 from utils.parserRinex import obsToDataframeFinal
 from utils.satelite_manager import get_satelites
+from sklearn.metrics import pairwise_distances
+import seaborn as sns
 
 
 
@@ -19,68 +21,11 @@ class Doppler:
 
         # set the good t_data ( 26 nov à 10:00:00 )
 
-        sats[9].t_data = 208800
-        sats[0].t_data = 208800
-        sats[10].t_data = 208800
-
-        # print(sats[10].name,   ' - ', sats[9].name,   ' - ',sats[0].name )
-        # print(sats[10].t_data, ' - ', sats[9].t_data, ' - ',sats[0].t_data )
-
-        # stats_indx = [9, 0, 10]
-
-        # for s in stats_indx:
-        #     sats[s].show_info()
-
-
-        self.ri1 = sats[10].get_pos()
-        self.ri2 = sats[9].get_pos()
-        self.ri3 = sats[0].get_pos()
-        #print(self.ri2)
-
-        self.vi1 = sats[10].get_velocity()
-        self.vi2 = sats[9].get_velocity()
-        self.vi3 = sats[0].get_velocity()
-
-
-    def test_angles(self):
-        
-        ri12 = np.arccos(np.dot(self.ri1, self.ri2) / (np.linalg.norm(self.ri1) * np.linalg.norm(self.ri2)) )
-        ri13 = np.arccos(np.dot(self.ri1, self.ri3) / (np.linalg.norm(self.ri1) * np.linalg.norm(self.ri3)) )
-        ri23 = np.arccos(np.dot(self.ri2, self.ri3) / (np.linalg.norm(self.ri2) * np.linalg.norm(self.ri3)) )  
-
-        # print(ri12, ri13, ri23)
-
-
-    def corelation_coeficiant(self, v1:np.ndarray, V2:np.ndarray):
-        pass
-
     def get_k(self, D_i, f_ti, v_i, a_i):
         c = 3.00*10**8
         res =  (c * (D_i / f_ti)) + np.vdot(v_i, a_i)
         # print(  np.linalg.norm(v_i)*3.6 )
         return res
-
-
-    def azimuth_to_ECEF(self, vector:np.ndarray):
-        # vector  => [ x_sat , y_sat , z_sat]
-        # user_position => [ x_usr , y_usr , z_usr]
-
-        r = np.linalg.norm(vector)
-
-        theta = np.arctan( (vector[0]) / ( vector[2] ) )
-        phi = np.arctan( vector[1] / np.sqrt( vector[0]**2 + vector[2]**2 ) )
-
-        x, y, z = r*np.cos(phi) * np.cos(theta), r*np.sin(theta), r*np.cos(phi) * np.sin(theta) 
-
-        return np.array([x, y, z])
-
-    def project_on_ai(self, vi, ai):
-        return np.dot(vi, ai)/np.linalg.norm(ai)
-
-    def ecef_to_enu(self, origin, v):
-        E = None
-        N = None
-        U = None
 
 
     def visualize(self, ru:np.ndarray, sats:list, t:int):
@@ -98,10 +43,9 @@ class Doppler:
             positions.append([ x, y, z, vx, vy, vz])
 
         positions.append([ru[0], ru[1], ru[2], 0, 0, 0])
+        positions.append([0, 0, 0, 0, 0, 0])
+        indexes.append("Orig")
         df = pd.DataFrame(np.array(positions), columns=['x','y','z', 'vx', 'vy', 'vz'], index=indexes)
-
-        # print(df)
-        # print(np.linalg.norm(sats[0].get_velocity(t)))
 
 
         fig = plt.figure()
@@ -119,20 +63,34 @@ class Doppler:
 
         plt.show()
 
-        
+    def get_available_satelites(self, t:int, sats:list, sats_obs:pd.DataFrame):
+        obs_names = list(sats_obs.loc[2081, t].index)
+        available_sats = list()
 
 
-    def get_usr_velocity(self,t:int ,ru:np.ndarray, sats:list, D_i:list, f_ti:list ):
+        for s in sats:
 
-        # self.visualize(ru, sats, t)
+            if(t <= s.toe * 2*60*60 and t >= s.toe and s.name in obs_names):
+                available_sats.append(s)
 
-        a1 = (self.sats[0].get_pos(t) [:3]- ru) / (np.linalg.norm(self.sats[0].get_pos(t) [:3]- ru))
-        a2 = (self.sats[1].get_pos(t) [:3]- ru) / (np.linalg.norm(self.sats[1].get_pos(t) [:3]- ru))
-        a3 = (self.sats[2].get_pos(t) [:3]- ru) / (np.linalg.norm(self.sats[2].get_pos(t) [:3]- ru))
+        return available_sats
 
-        k1 = self.get_k(D_i[0], f_ti[0], self.sats[0].get_pos(t)[3:], a1)
-        k2 = self.get_k(D_i[1], f_ti[1], self.sats[1].get_pos(t)[3:], a2)
-        k3 = self.get_k(D_i[2], f_ti[2], self.sats[2].get_pos(t)[3:], a3)
+
+    def get_usr_velocity(self,t:int ,ru:np.ndarray, sats:list, sats_obs:pd.DataFrame, f_ti:list ):
+
+        # sats[0].show_trajetcory()
+
+        obs = sats_obs.loc[2081, t]
+
+        D_i = [obs.loc[s.name].doppler for s in sats]
+
+        a1 = (sats[0].get_pos(t) [:3]- ru) / (np.linalg.norm(sats[0].get_pos(t)[:3]- ru))
+        a2 = (sats[1].get_pos(t) [:3]- ru) / (np.linalg.norm(sats[1].get_pos(t)[:3]- ru))
+        a3 = (sats[2].get_pos(t) [:3]- ru) / (np.linalg.norm(sats[2].get_pos(t)[:3]- ru))
+
+        k1 = self.get_k(D_i[0], f_ti[0], sats[0].get_pos(t)[3:], a1)
+        k2 = self.get_k(D_i[1], f_ti[1], sats[1].get_pos(t)[3:], a2)
+        k3 = self.get_k(D_i[2], f_ti[2], sats[2].get_pos(t)[3:], a3)
 
         K = np.array([k1, k2, k3])
 
@@ -140,103 +98,125 @@ class Doppler:
 
         v = np.dot(np.linalg.inv(M), K)
 
-        # print('K = ', K)
-        # print('M = ', M)
-        # print('det(M) = ', np.linalg.det(M))
-        
-
-        print("Sat_Names : ", [s.name for s in sats])
-
-        print("Sat_positions: ", [s.get_velocity(t)[:3] for s in sats])
-        
-        print("Sat_Valocities: ", [s.get_velocity(t)[3:] for s in sats])
-        
-        print('v_usr = ', v)
-
-        print('||v||  =', np.linalg.norm(v)*3.6, 'km/h')
-        print("||Sat_Valocities||: ", [np.linalg.norm(s.get_velocity(t)[3:]) for s in sats])
-
-
-
-        # fig = plt.figure()
-        # ax = Axes3D(fig)
-
-        # ax.scatter(ru[0], ru[1], ru[2], color='b') 
-        # ax.text(ru[0], ru[1], ru[2],  '%s' % ("usr"), size=20, zorder=1, color='k') 
-        # ax.quiver(ru[0], ru[1], ru[2], v[0], v[1], v[2])
-
-        # plt.show()
-
-        return v*3.6
+        return np.linalg.norm(v)
     
 
+    
 
+    def draw_velocity_evolution(self, position_file_location:str, nav_file_location:str, obs_file_location:str ):
+        sats = parse_nav_file(nav_file_location)
 
+        # user_positions = parse_positions(position_file_location).set_index(["gps_sec_of_week"])
 
-    def draw_velocity_evolution(self):
-        #G6 et G23 // G10 & G09
+        user_positions = pd.read_hdf(position_file_location + '.hdf5', 'data')
+        user_positions = user_positions.reset_index().drop_duplicates(subset ="gps_sec_of_week", inplace = False).set_index(["gps_sec_of_week"])
 
-        # position_history = parse_positions('test_data/autoroute_plus_tunnel.pos')
+        # user_positions.to_hdf( position_file_location+'.hdf5', key='data')
 
-        # position_history = position_history.set_index('gps_sec_of_week')
+        # sats_observation = obsToDataframeFinal(obs_file_location)
 
-        position_history = pd.read_hdf('test_data/autoroute_plus_tunnel.hdf5').set_index('gps_sec_of_week')
+        # sats_observation.to_hdf(obs_file_location + '.hdf5', key='data')
 
+        sats_observation = pd.read_hdf(obs_file_location + '.hdf5', 'data')
 
-        position_history =  position_history.reset_index().drop_duplicates(subset='gps_sec_of_week', keep='first').set_index('gps_sec_of_week')
+        time = list(sats_observation.index.get_level_values(1))
 
-        # rinex_dataframe = obsToDataframeFinal('test_data/autoroute_plus_tunnel.obs')
+        vs = list()
+        true_velocity = list()
+        time_vel= list()
 
-        # rinex_dataframe.to_hdf("test_data/rinex_data.hdf5", key='rinex')
-
-        rinex_dataframe = pd.read_hdf('test_data/rinex_data.hdf5')
-
-
-        # print(position_history)
- 
-
-        v_data = list()
-
-        for time in list(position_history.index):
-            try:
-                reciver_informations = rinex_dataframe.loc[(2081, time)]
-            except:
-                print(time)
-            sats = get_satelites(self.sats, time, reciver_informations)
-
-            f_ti = [1.57542*10**9]*3 
-            data = position_history.loc[time]
-
-            # print(reciver_informations)
-            ru = [np.array([data['x'], data['y'], data['z']])][0]
-            d_i = [ reciver_informations.loc[s.name]['doppler'] for s in sats ]  
+        for t in time : 
+            tmp_sats = self.get_available_satelites(t, sats, sats_observation)
+            if len(tmp_sats) < 3:
+                continue
             
-            if (len(d_i) < 3):
+            try:
+                ru = user_positions.loc[int(t)]
+            except Exception :
                 continue
 
-            v = self.get_usr_velocity(time, ru, sats, d_i, f_ti)
-            v_data.append(np.linalg.norm(v)*3.6)
+            vs.append(self.get_usr_velocity( t, ru, tmp_sats, sats_observation ,[1.57542*10**9] * 3))
+            try:
+                true_velocity.append(np.linalg.norm([user_positions.loc[t]-user_positions.loc[t-1]])*3.6 )
+            except Exception:
+                true_velocity.append(true_velocity[-1])
 
-        # plt.plot(list(position_history.index)[:len(v_data)], v_data)
-        # plt.grid()
-        # plt.legend()
-        # plt.show()
+            time_vel.append(t)
+
+        plt.plot(time_vel,vs, label="doppler")
+        plt.plot(time_vel, true_velocity, label="derivative")
+        plt.legend()
+        plt.grid()
+        plt.show()
+
+
+
         
-        # print('FINAL VELOCITY :', np.linalg.norm(v)*3.6, 'km/h')
+
+    def best_satelites(self, t:int, sats:list, user_position:np.ndarray):
+
+        spheric_coordonate = np.array([s.point_satelite_angles(user_position, t) for s in sats])
+
+        names = [s.name for s in sats]
+
+        satelite_dataframe = pd.DataFrame(spheric_coordonate, columns=['r', 'phi', 'theta'], index=names).sort_values(['phi', 'theta'])
+
+        
+
+        print(satelite_dataframe)
+
+        best_satelites = [sats[0], sats[ int(len(sats)/2) ], sats[-1]]
+
+        
+ 
+        return best_satelites
+        
+        
+
+
+
+
 
 
     def test_velocity(self):
-        di = [1319.955, -513.404, -2687.413]
+        # di = [-2408.521, -2594.214, -2687.413]
 
         ru = np.array([4043547.78553915, 254207.686387644, 4909623.02474359])
 
-        sats = [self.sats[i] for i  in [9, 0, 10]]
+        sats_obs = pd.read_hdf("test_data/satelites_observation.hdf5", 'data')
 
-        v = self.get_usr_velocity(208800, ru, sats,di, [1.57542*10**9]*3  )
+        sats_obs = sats_obs.reset_index()
 
-        # sats[0].show_trajetcory()
+        sats_obs.second_of_week = sats_obs.second_of_week - 26
 
-        # doppler.draw_velocity_evolution()
+        sats_obs =sats_obs.set_index(["n_week", "second_of_week", "name"])
+
+        sats = self.get_available_satelites(208800, self.sats, sats_obs)
+
+        print([s.name for s in sats[:3]])
+
+
+
+        v = self.get_usr_velocity(208800, ru, sats, sats_obs, [1.57542*10**9] * 3)
+
+        print('v1 :', v)
+
+        sats = self.best_satelites(208800, sats, ru)
+
+        self.visualize(ru, sats, 208800)
+
+        
+        v = self.get_usr_velocity(208800, ru, sats , sats_obs, [1.57542*10**9] * 3)
+
+        print('v2 :',v)
+        # self.draw_velocity_evolution('test_data/autoroute_plus_tunnel.pos', 
+        # 'test_data/autoroute_plus_tunnel.nav', 
+        # 'test_data/autoroute_plus_tunnel.obs' )
+
+        # print(v)
+
+
+
        
        
 

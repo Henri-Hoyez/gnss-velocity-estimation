@@ -26,8 +26,6 @@ class Satellite:
         self.i_dot = i_dot
         self.clock_drift = clock_drift  
 
-
-
         self.name = None
         self.ephemeris_date = None
         self.type = None
@@ -62,11 +60,6 @@ class Satellite:
 
 
     def get_pos(self, t_obs:int=None):
-        
-
-
-
-
         t_data = t_obs if t_obs != None else self.t_data
 
         bOMEGAE84 = 7.2921151467*10**-5
@@ -89,13 +82,9 @@ class Satellite:
         # self.omega_ascension0  =  .108886242411e+01
         # self.omega_dot_ascension= -.815426822943E-08
         # t_data = 381600
-        self.convert_c_language(t_data)
-
-
 
         A = self.sqrt_a * self.sqrt_a
         
-
         n0 = np.sqrt(bGM84/(A*A*A))
         tk = t_data - self.toe
         n = n0 + self.delta_n
@@ -146,21 +135,23 @@ class Satellite:
 
         xkdot = ( xpkdot-ypk*np.cos(ik)*omegakdot ) * np.cos(omegak) - ( xpk*omegakdot+ypkdot*np.cos(ik)-ypk*np.sin(ik)*ikdot )*np.sin(omegak)
         ykdot = ( xpkdot-ypk*np.cos(ik)*omegakdot ) * np.sin(omegak) + ( xpk*omegakdot+ypkdot*np.cos(ik)-ypk*np.sin(ik)*ikdot )*np.cos(omegak)
-        zkdot = ypkdot * np.sin(ik) + ypk * np.cos(ik)*ikdot
+        zkdot = ypkdot * np.sin(ik) + ypk * np.cos(ik) * ikdot
 
-        print( "BCpos: t, xk, yk, zk:", t_data, xk, yk, zk )
-        print("BCvel: t, Vxk, Vyk, Vzk:", t_data, xkdot, ykdot, zkdot)
-        print("v= ", np.linalg.norm([ xkdot, ykdot, zkdot])*3.6 )
-        print()
+        # self.convert_c_language(t_data)
+
+        # print( "BCpos: t, xk, yk, zk:", t_data, xk, yk, zk )
+        # print("BCvel: t, Vxk, Vyk, Vzk:", t_data, xkdot, ykdot, zkdot)
+        # print("v= ", np.linalg.norm([ xkdot, ykdot, zkdot])*3.6 )
+        # print()
         # exit()
 
         
         return np.array([xk, yk, zk, xkdot , ykdot , zkdot ])
 
     def get_velocity(self,delta_t=1):
-        pos1 = self.get_pos(self.t_data - delta_t)
+        pos1 = self.get_pos(self.t_data - delta_t)[:3]
 
-        pos2 = self.get_pos(self.t_data)
+        pos2 = self.get_pos(self.t_data)[:3]
 
         return (pos2-pos1)/(delta_t)
 
@@ -197,7 +188,16 @@ class Satellite:
         plt.grid()
 
 
+    def point_satelite_angles(self, origin:np.ndarray, t:int):
+        # soh cah toa
+        sat_position = self.get_pos(t)[:3]
+        orig_sat_vector = origin - sat_position
+        r = np.linalg.norm(orig_sat_vector)
 
+        phi = np.arcsin(orig_sat_vector[1]/r)
+        theta = np.arctan(orig_sat_vector[2]/orig_sat_vector[0])
+
+        return r, phi, theta
 
 
     def show_satelite_epheremide(self):
