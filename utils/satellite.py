@@ -61,9 +61,6 @@ class Satellite:
 
 
     def get_pos(self, t_obs:int=None):
-        self.show_satelite_epheremide()
-        exit()
-
         t_data = t_obs if t_obs != None else self.t_data
 
         bOMEGAE84 = 7.2921151467*10**-5
