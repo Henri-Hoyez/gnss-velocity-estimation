@@ -8,7 +8,6 @@ class TDCP:
     def __init__(self):
         sats = parse_nav_file("data/Very_Bad_Trip/Belgique/autoroute_plus_tunnel.nav")
         print([sat.name for sat in sats])
-        print("blabla",-sats[13].get_pos()[:3]/1000)
         self.x_sk = np.array([[sats[10].get_pos()[:3],sats[9].get_pos()[:3],-sats[0].get_pos()[:3],sats[13].get_pos()[:3]],
         [sats[10].get_pos(sats[10].toe+1)[:3],sats[9].get_pos(sats[9].toe+1)[:3],sats[0].get_pos(sats[0].toe+1)[:3],sats[13].get_pos(sats[13].toe+1)[:3]]])
         self.x_rk = np.array([[4043743.6490 ,   261011.8175  , 4909156.8423],
@@ -76,21 +75,21 @@ class TDCP:
         el = np.array([np.pi/2,np.pi/4,np.pi/3,np.pi/6])
         
         num1 = np.array(ru_t[0]-ri_jt[0])
-        den1 = np.diag(np.sqrt(np.dot(num1,np.transpose(num1))))
+        den1 = np.sqrt(np.diag(np.dot(num1,num1.T)))
         e_jt1 = -np.array([np.divide(num1[:,0],den1),np.divide(num1[:,1],den1),np.divide(num1[:,2],den1)])
-        print("aaaa",num1)
-        print("bbbb",den1)
-        print("cccc",e_jt1)
+        # print(num1.T.shape)
+        # print("bbbb",den1)
+        # print("cccc",e_jt1)
 
         num2 = ru_t[1]-ri_jt[1]
-        den2 = np.diag(np.sqrt(np.dot(num2,np.transpose(num2))))
+        den2 = np.sqrt(np.diag(np.dot(num2,np.transpose(num2))))
         e_jt2 = -np.array([np.divide(num2[:,0],den2),np.divide(num2[:,1],den2),np.divide(num2[:,2],den2)])
 
     
         SVDoppler = np.diag(e_jt2.T.dot(ri_jt[1].T)) - np.diag(e_jt1.T.dot(ri_jt[0].T))
         Dgeometry = np.dot(np.transpose(e_jt2),ru_t[0])-np.dot(np.transpose(e_jt1),ru_t[0])
-
-        d_phi_adj = (3*10**8)/(1575.42*10**6)*dphi/100#-SVDoppler+Dgeometry
+        print(e_jt2.shape,"|",ri_jt[1].shape)
+        d_phi_adj = 1/(1575.42)*dphi#(3*10**8)/(1575.42*10**6)*dphi#-SVDoppler+Dgeometry
         print("******")
         print(dphi)
         print(SVDoppler)
