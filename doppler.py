@@ -25,9 +25,10 @@ class Doppler:
         self.sats = parse_nav_file("test_data/autoroute_plus_tunnel.nav")
 
 
-    def get_k(self, D_i, f_ti, v_i, a_i):
+    def get_k(self, D_i, f_ti, v_i, a_i, clock_drift, obs_err):
         c = 3.00*10**8
         res =  (c * (D_i / f_ti)) + np.vdot(v_i, a_i)% 2 * np.pi
+        # res = - D_i + c*clock_drift + obs_err
         # print(  np.linalg.norm(v_i)*3.6 )
         return res
 
@@ -111,34 +112,31 @@ class Doppler:
         Returns:
             float -- velocity in meter peer second
         """
-
-
-
-        # sats[0].show_trajetcory()
-
         obs = sats_obs.loc[2081, t]
 
-        D_i = np.array([obs.loc[s.name].doppler for s in sats[:3]])*10**-3
+        D_i = np.array([obs.loc[s.name].doppler for s in sats[:3]])
 
         # print(D_i)
 
 
         # print("PARAMETERS :")
         # print('t:            ', t)
-        # print('ru (m)', np.array(ru))
         # print('Dopplers  (hetz? kHz ?)    ', np.array(D_i))
         # print('f_ti    (hetz? kHz ?)      ',f_ti)
 
-        a1 = (sats[0].get_pos(t)[:3]*10**3 - ru)/(np.linalg.norm(sats[0].get_pos(t)[:3]*10**3 - ru))
-        a2 = (sats[1].get_pos(t)[:3]*10**3 - ru)/(np.linalg.norm(sats[1].get_pos(t)[:3]*10**3 - ru))
-        a3 = (sats[2].get_pos(t)[:3]*10**3 - ru)/(np.linalg.norm(sats[2].get_pos(t)[:3]*10**3 - ru))
+        a1 = (sats[0].get_pos(t)[:3] - ru)/(np.linalg.norm(sats[0].get_pos(t)[:3] - ru))
+        a2 = (sats[1].get_pos(t)[:3] - ru)/(np.linalg.norm(sats[1].get_pos(t)[:3] - ru))
+        a3 = (sats[2].get_pos(t)[:3] - ru)/(np.linalg.norm(sats[2].get_pos(t)[:3] - ru))
 
-        # print("a position (m)   ", sats[0].get_pos(t)[:3]*10**3)
+        # print("a position (m)   ", np.linalg.norm(sats[0].get_pos(t)[:3]))
         # print('a velocity (m/s)   ', np.linalg.norm(sats[0].get_pos(t)[3:]))
+        # print('ru (m)', np.array(ru))
+        
+        # print()
 
-        k1 = self.get_k(D_i[0], f_ti[0], np.array(sats[0].get_pos(t)[3:]), a1)
-        k2 = self.get_k(D_i[1], f_ti[1], np.array(sats[1].get_pos(t)[3:]), a2)
-        k3 = self.get_k(D_i[2], f_ti[2], np.array(sats[2].get_pos(t)[3:]), a3)
+        k1 = self.get_k(D_i[0], f_ti[0], np.array(sats[0].get_pos(t)[3:]), a1, sats[0].clock_drift, sats[0].observation_error )
+        k2 = self.get_k(D_i[1], f_ti[1], np.array(sats[1].get_pos(t)[3:]), a2, sats[1].clock_drift, sats[1].observation_error )
+        k3 = self.get_k(D_i[2], f_ti[2], np.array(sats[2].get_pos(t)[3:]), a3, sats[2].clock_drift, sats[2].observation_error )
 
         K = np.array([k1, k2, k3])
 
@@ -146,7 +144,7 @@ class Doppler:
 
         v = np.dot(np.linalg.inv(M), K)
 
-        return np.linalg.norm(v)*3.6
+        return np.linalg.norm(v)/3.6
     
 
     
@@ -176,7 +174,7 @@ class Doppler:
 
         # sats_observation = pd.read_hdf(obs_file_location + '.hdf5', 'data')
 
-        time = list(sats_observation.index.get_level_values(1)[107000:])
+        time = list(sats_observation.index.get_level_values(1)[107000:107000+10000])
 
         vs = list()
         true_velocity = list()
@@ -239,7 +237,6 @@ class Doppler:
  
         return best_satelites
         
-        
 
     def test_velocity(self):
 
@@ -287,13 +284,12 @@ class Doppler:
 
         real_velocity = np.array(positions.loc[time_-1] - positions.loc[time_])
 
-        print('ground truth', np.linalg.norm(real_velocity))
-
-
+        print('ground truth', np.linalg.norm(real_velocity)*3.6)
 
         self.draw_velocity_evolution('test_data/autoroute_plus_tunnel.pos', 
         'test_data/autoroute_plus_tunnel.nav', 
         'test_data/autoroute_plus_tunnel.obs' )
+
 
         # print(v)
 
