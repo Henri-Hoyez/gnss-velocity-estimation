@@ -6,3 +6,6 @@ doc/
 
 *.pyc
 *.exe   
+
+*.lnk
+*.hdf5

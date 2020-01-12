@@ -7,8 +7,8 @@ import pyproj
 from os import _exists
 
 def spheric_to_ECEF(lat, lon, height):
-    # return all values in meters
-    
+    # return all values (x, y, z) in meters
+
     ecef = pyproj.Proj(proj='geocent', ellps='WGS84', datum='WGS84')
     lla = pyproj.Proj(proj='latlong', ellps='WGS84', datum='WGS84')
     x, y, z = pyproj.transform(lla, ecef, lon, lat, height, radians=False)
@@ -17,13 +17,7 @@ def spheric_to_ECEF(lat, lon, height):
 
 
 def parse_positions(filename:str):
-
-    # print( _exists(filename.split('.')[0]+'.hdf5') )
-    # print( filename.split('.')[0]+'.hdf5') 
-    # exit()
-
     if(_exists(filename.split('.')[0]+'.hdf5')):
-        print('chargemnet')
         return pd.read_hdf(filename.split('.')[0]+'.hdf5')
 
     position_file = open(filename)
@@ -44,31 +38,19 @@ def parse_positions(filename:str):
         gps_sec_of_week = get_second_of_week(datetime(int(year), int(month), int(day), 
                                                       int(hour), int(minutes), int(seconds.split('.')[0]) ) )
 
-
-        # print(year, month, day, hour, minutes, seconds)
-
-
-
-
-        # print( get_second_of_week(datetime(2019, 11, 26, 10, 00, 0 ) ) )
-        # print()
-
-        # exit()
         splited_line = list(dict.fromkeys(splited_line))
         splited_line.remove('')
         
-        lat = float(splited_line[2])
-        lon = float(splited_line[3])
-        height = float(splited_line[4])
+        x = float(splited_line[2])
+        y = float(splited_line[3])
+        z = float(splited_line[4])
 
 
-        x, y, z = spheric_to_ECEF(lat, lon, height)
+        # x, y, z = spheric_to_ECEF(x, y, z)  when you pos file compute the lattitude, longitude and height in RTKPOST.
 
         position_data.append([gps_sec_of_week, x, y, z])
 
         df = pd.DataFrame(position_data, columns=['gps_sec_of_week', 'x', 'y', 'z'])
-
-        # print(df.head())
 
     df.to_hdf(filename.split('.')[0]+'.hdf5', key='position')
 
