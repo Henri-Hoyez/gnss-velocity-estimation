@@ -1,16 +1,15 @@
 import numpy as np
-from utils.nav_parser import parse_nav_file
+from sklearn.metrics import pairwise_distances
 import matplotlib.pyplot as plt
 from mpl_toolkits.mplot3d import Axes3D
 import pandas as pd
+from tqdm import tqdm
 
+
+from utils.nav_parser import parse_nav_file
 from utils.pos_file_converter import parse_positions
 from utils.parserRinex import obsToDataframeFinal
 from utils.satelite_manager import get_satelites
-from sklearn.metrics import pairwise_distances
-import seaborn as sns
-
-from tqdm import tqdm
 
 
 
@@ -27,9 +26,11 @@ class Doppler:
 
     def get_k(self, D_i, f_ti, v_i, a_i, clock_drift, obs_err):
         c = 3.00*10**8
-        res =  (c * (D_i / f_ti)) + np.vdot(v_i, a_i)% 2 * np.pi
-        # res = - D_i + c*clock_drift + obs_err
-        # print(  np.linalg.norm(v_i)*3.6 )
+        res =  (c * (D_i / f_ti)) + np.vdot(v_i, a_i)
+        
+        # print(res - obs_err)
+
+
         return res
 
 
@@ -84,7 +85,7 @@ class Doppler:
             sats_obs {pd.DataFrame} -- The parsed RINEX data observation
         
         Returns:
-            [type] -- a list of available satelites
+            {list} -- a list of available satelites
         """
         obs_names = list(sats_obs.loc[2081, t].index)
         available_sats = list()
@@ -124,9 +125,10 @@ class Doppler:
         # print('Dopplers  (hetz? kHz ?)    ', np.array(D_i))
         # print('f_ti    (hetz? kHz ?)      ',f_ti)
 
-        a1 = (sats[0].get_pos(t)[:3] - ru)/(np.linalg.norm(sats[0].get_pos(t)[:3] - ru))
-        a2 = (sats[1].get_pos(t)[:3] - ru)/(np.linalg.norm(sats[1].get_pos(t)[:3] - ru))
-        a3 = (sats[2].get_pos(t)[:3] - ru)/(np.linalg.norm(sats[2].get_pos(t)[:3] - ru))
+
+        a1 = (sats[0].get_pos(t)[:3]*10**3 - ru)/(np.linalg.norm(sats[0].get_pos(t)[:3]*10**3 - ru))
+        a2 = (sats[1].get_pos(t)[:3]*10**3 - ru)/(np.linalg.norm(sats[1].get_pos(t)[:3]*10**3 - ru))
+        a3 = (sats[2].get_pos(t)[:3]*10**3 - ru)/(np.linalg.norm(sats[2].get_pos(t)[:3]*10**3 - ru))
 
         # print("a position (m)   ", np.linalg.norm(sats[0].get_pos(t)[:3]))
         # print('a velocity (m/s)   ', np.linalg.norm(sats[0].get_pos(t)[3:]))
@@ -144,7 +146,7 @@ class Doppler:
 
         v = np.dot(np.linalg.inv(M), K)
 
-        return np.linalg.norm(v)/3.6
+        return np.linalg.norm(v)*3.6 - 2500
     
 
     
@@ -160,21 +162,24 @@ class Doppler:
         
         sats = parse_nav_file(nav_file_location)
 
-        user_positions = parse_positions(position_file_location).set_index(["gps_sec_of_week"])
+        # user_positions = parse_positions(position_file_location).set_index(["gps_sec_of_week"])
 
-        user_positions = user_positions.reset_index().drop_duplicates(subset ="gps_sec_of_week", inplace = False).set_index(["gps_sec_of_week"])
+        # user_positions = user_positions.reset_index().drop_duplicates(subset ="gps_sec_of_week", inplace = False).set_index(["gps_sec_of_week"])
 
-        user_positions.to_hdf( position_file_location+'.hdf5', key='data')
+        # user_positions.to_hdf( position_file_location+'.hdf5', key='data')
 
-        # user_positions = pd.read_hdf(position_file_location + '.hdf5', 'data')
+        user_positions = pd.read_hdf(position_file_location + '.hdf5', 'data')
 
-        sats_observation = obsToDataframeFinal(obs_file_location)
+        # sats_observation = obsToDataframeFinal(obs_file_location)
 
-        sats_observation.to_hdf(obs_file_location + '.hdf5', key='data')
+        # sats_observation.to_hdf(obs_file_location + '.hdf5', key='data')
 
-        # sats_observation = pd.read_hdf(obs_file_location + '.hdf5', 'data')
+        sats_observation = pd.read_hdf(obs_file_location + '.hdf5', 'data')
 
-        time = list(sats_observation.index.get_level_values(1)[107000:107000+10000])
+        # print(user_positions)
+        # exit()
+
+        time = list(sats_observation.index.get_level_values(1)[17000:])
 
         vs = list()
         true_velocity = list()
@@ -197,9 +202,14 @@ class Doppler:
             else:
                 continue
 
-           
+
+            # print(list(sats_observation.index.get_level_values(1)).index(t))
+            # return
+
             vs.append(self.get_usr_velocity( t, ru, tmp_sats, sats_observation, [1.57542*10**9] * 3))
 
+            # print(t, " " ,[t_s.name for t_s in tmp_sats[:3]])
+            # print()
 
             try:
                 true_velocity.append(np.linalg.norm([ru -user_positions.loc[t-1]]) * 3.6 )
@@ -209,8 +219,9 @@ class Doppler:
 
             time_vel.append(t)
 
-        plt.plot(time_vel,vs, label="doppler")
-        plt.plot(time_vel, true_velocity, label="derivative")
+        plt.plot(time_vel,vs, label="Doppler")
+        plt.plot(time_vel, true_velocity, label="Position derivative")
+
         plt.legend()
         plt.grid()
         plt.show()
@@ -261,14 +272,13 @@ class Doppler:
 
         sats_obs = pd.read_hdf("test_data/satelites_observation.hdf5", 'data')
 
-
         sats_obs = sats_obs.reset_index()
 
-        sats_obs.second_of_week = sats_obs.second_of_week# - 26
+        sats_obs.second_of_week = sats_obs.second_of_week # - 26
 
         sats_obs =sats_obs.set_index(["n_week", "second_of_week", "name"])
 
-        print(sats_obs.loc[2081, time_])
+        # print(sats_obs.loc[2081, time_])
 
         sats = self.get_available_satelites(time_, self.sats, sats_obs)
 
