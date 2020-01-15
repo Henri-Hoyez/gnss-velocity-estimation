@@ -67,6 +67,7 @@ class TDCP:
 
 
     def TDCP_matlab(self):
+        
         ru_t = self.x_rk
         ri_jt = self.x_sk
         dphi = self.phase2-self.phase1
@@ -89,7 +90,9 @@ class TDCP:
         SVDoppler = np.diag(e_jt2.T.dot(ri_jt[1].T)) - np.diag(e_jt1.T.dot(ri_jt[0].T))
         Dgeometry = np.dot(np.transpose(e_jt2),ru_t[0])-np.dot(np.transpose(e_jt1),ru_t[0])
         print(e_jt2.shape,"|",ri_jt[1].shape)
-        d_phi_adj = 1/(1575.42)*dphi#(3*10**8)/(1575.42*10**6)*dphi#-SVDoppler+Dgeometry
+        # d_phi_adj = 1/(1575.42)*dphi#(3*10**8)/(1575.42*10**6)*dphi#-SVDoppler+Dgeometry
+        
+        d_phi_adj = ((3*10**8)/(1575.42*10**6)*dphi)%(2*np.pi)
         print("******")
         print(dphi)
         print(SVDoppler)
