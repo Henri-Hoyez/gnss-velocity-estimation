@@ -76,6 +76,7 @@ class Doppler:
 
         plt.show()
 
+
     def get_available_satelites(self, t:int, sats:list, sats_obs:pd.DataFrame):
         """This function aimed to filter and return only the available satellites
         
@@ -227,7 +228,7 @@ class Doppler:
         plt.show()
 
 
-
+    
         
 
     def best_satelites(self, t:int, sats:list, user_position:np.ndarray):
@@ -249,6 +250,28 @@ class Doppler:
         return best_satelites
         
 
+    def compute_di(self,pseudo_rage_rate:float, vi, ai):
+        return -pseudo_rage_rate + np.dot(vi, ai)
+
+
+    def speed_for_the_win(self, t:float, user_position:np.ndarray, sats:list, observation_dataframe:pd.DataFrame):
+
+
+        # a1 = (sats[0].get_pos(t)[:3]*10**3 - ru)/(np.linalg.norm(sats[0].get_pos(t)[:3]*10**3 - ru))
+
+        ai = [(sats[i].get_pos(t)[:3]*10**3 - user_position)/(np.linalg.norm(sats[i].get_pos(t)[:3]*10**3 - user_position)) for i in range(3) ]
+
+        ai = np.array(ai)
+
+
+        print("ai:", ai)
+
+
+
+        di = [ self.compute_di(observation_dataframe.loc[2081, t,sats[i].name].pseudo_range, sats[i].get_pos(t)[3:], ai[i] ) for i in range(3)]
+
+        pass
+
     def test_velocity(self):
 
         time_ = 208800
@@ -260,7 +283,7 @@ class Doppler:
 
         # positions.to_hdf("positions.hdf5", key="data")
 
-        positions = pd.read_hdf("positions.hdf5", "data")
+        positions = pd.read_hdf("test_data/autoroute_plus_tunnel.pos.hdf5", "data")
 
         # ru = np.array([4043547.78553915, 254207.686387644, 4909623.02474359])
 
@@ -282,23 +305,15 @@ class Doppler:
 
         sats = self.get_available_satelites(time_, self.sats, sats_obs)
 
-        v = self.get_usr_velocity(time_, ru, sats, sats_obs, [1.57542*10**9] * 3)
 
-        print('v1 :', v)
-
-        sats = self.best_satelites(time_, sats, ru)
+        self.speed_for_the_win(time_, ru, sats, sats_obs)
         
-        v = self.get_usr_velocity(time_, list(ru), sats , sats_obs, [1.57542*10**9] * 3)
 
-        print('v2 :',v)
+        # print('ground truth', np.linalg.norm(real_velocity) * 3.6)
 
-        real_velocity = np.array(positions.loc[time_-1] - positions.loc[time_])
-
-        print('ground truth', np.linalg.norm(real_velocity)*3.6)
-
-        self.draw_velocity_evolution('test_data/autoroute_plus_tunnel.pos', 
-        'test_data/autoroute_plus_tunnel.nav', 
-        'test_data/autoroute_plus_tunnel.obs' )
+        # self.draw_velocity_evolution('test_data/autoroute_plus_tunnel.pos', 
+        # 'test_data/autoroute_plus_tunnel.nav', 
+        # 'test_data/autoroute_plus_tunnel.obs' )
 
 
         # print(v)
