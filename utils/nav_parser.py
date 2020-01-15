@@ -59,6 +59,7 @@ def parse_gps_message(message:list):
 
     clock_drift = nav_data[0][2]
 
+    obs_err = nav_data[6][0]
 
     my_sat = Satellite(float(toe), float(t_data), float(mu0), float(delta_n), float(e), 
     float(omega0), float(cws), float(cwc), float(sqrt_a), float(crc), float(crs), float(cic), 
@@ -67,6 +68,7 @@ def parse_gps_message(message:list):
     my_sat.set_name(gps_name.replace(" ","0"))
     my_sat.set_ephemeris_date(nav_date)
     my_sat.set_type("GPS")
+    my_sat.set_observation_error(float(obs_err))
 
     return my_sat
     

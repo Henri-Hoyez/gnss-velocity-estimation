@@ -30,6 +30,7 @@ class Satellite:
         self.name = None
         self.ephemeris_date = None
         self.type = None
+        self.observation_error = None
 
 
     def set_type(self, type:str):
@@ -40,6 +41,9 @@ class Satellite:
 
     def set_ephemeris_date(self, ephemeris_date:datetime):
         self.ephemeris_date = ephemeris_date
+
+    def set_observation_error(self, observation_error):
+        self.observation_error = observation_error
 
 
     def show_trajetcory(self):
