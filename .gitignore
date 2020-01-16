@@ -2,5 +2,10 @@
 data/
 test_data/
 utils/__pycache__/
+doc/
 
 *.pyc
+*.exe   
+
+*.lnk
+*.hdf5

@@ -10,7 +10,7 @@ from datetime import date, timedelta, time, datetime
 #           UTILISATION UNIQUE
 
 def formatFichier(file):
-    f=open("data/"+file)
+    f=open(file)
     f2=open("tamponObs.txt","w")
     
     ligne=f.readline()
@@ -28,7 +28,7 @@ def formatFichier(file):
             if(ligneTab[i]==" " and ligneTab[i+1]==" "):
                 ligneTab.pop(i)
             if(ligneTab[i]==" " and (ligneTab[i-1]=="G" or ligneTab[i-1]=="R")):
-                ligneTab.pop(i)
+                ligneTab[i] = "0"
         for k in range(len(ligneTab)):
             ligne2+=ligneTab[k]
         tabFinal.append(ligne2)
@@ -41,7 +41,7 @@ def formatFichier(file):
 # obsToDataframe : paramètre le fichier tamponObs au bon format 
 # retourne le dataframe avec comme index : 
 def obsToDataframe(file):
-    df=pd.read_csv("data/"+file,delim_whitespace=True,header=None,skiprows=lambda x:x<=29,names=['name','pseudo_range','carrier_phase','doppler','signal_strength','4','5'])
+    df=pd.read_csv(file,delim_whitespace=True,header=None,skiprows=lambda x:x<=29,names=['name','pseudo_range','carrier_phase','doppler','signal_strength','4','5'])
     df['second_of_week']=df['pseudo_range']
     i=0
     #index des lignes de temps
@@ -75,7 +75,7 @@ def obsToDataframeFinal(file):
 
 
 def posToDataframe(file):
-    df=pd.read_csv("data/"+file,delim_whitespace=True,header=13)
+    df=pd.read_csv(file,delim_whitespace=True,header=13)
     del df['Q'],df['ns'],df['sdx(m)'],df['sdy(m)'],df['sdz(m)'],df['sdyz(m)'],df['sdzx(m)'],df['age(s)'],df['ratio'],df['sdxy(m)']
 
 
@@ -103,7 +103,7 @@ def posToDataframe(file):
 
 
 # EXEMPLE :
-df=obsToDataframeFinal("autoroute_apres_midi.obs")
+# df=obsToDataframeFinal("autoroute_apres_midi.obs")
 # print(df)
 # df=posToDataframe("autoroute_apres_midi.pos")
 # print(df)
