@@ -194,8 +194,8 @@ class Satellite:
 
 
     def point_satelite_angles(self, origin:np.ndarray, t:int):
-        # soh cah toa
         sat_position = self.get_pos(t)[:3]
+
         orig_sat_vector = origin - sat_position
         r = np.linalg.norm(orig_sat_vector)
 

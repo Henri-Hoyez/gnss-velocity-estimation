@@ -22,7 +22,7 @@ class Doppler:
     """
     def __init__(self):
         # set the good t_data ( 26 nov à 10:00:00 )
-        self.sats = parse_nav_file("data/Very_Bad_Trip/Belgique/autoroute_plus_tunnel.nav")
+        self.sats = parse_nav_file("test_data/autoroute_plus_tunnel.nav")
 
 
     def get_k(self, D_i, f_ti, v_i, a_i, clock_drift, obs_err):
@@ -45,17 +45,18 @@ class Doppler:
         """
 
         indexes = [s.name for s in sats]
-        indexes.append('usr')
 
         positions = []
         for s in sats:
             x, y, z, vx, vy, vz = s.get_pos(t)
             positions.append([ x, y, z, vx, vy, vz])
-            positions.append([ru[0], ru[1], ru[2], 0, 0, 0])
 
         positions.append([ru[0], ru[1], ru[2], 0, 0, 0])
+        indexes.append('usr')
+
         positions.append([0, 0, 0, 0, 0, 0])
         indexes.append("Orig")
+        
         df = pd.DataFrame(np.array(positions), columns=['x','y','z', 'vx', 'vy', 'vz'], index=indexes)
 
 
@@ -63,8 +64,6 @@ class Doppler:
         ax = Axes3D(fig)
 
         for i in range( df.shape[0] ): #plot each point + it's index as text above
-        # print(df)
-        # print(np.linalg.norm(sats[0].get_velocity(t)))
             x,y,z = df['x'][i], df['y'][i] , df['z'][i]
             vx, vy, vz = df['vx'][i]*3.6, df['vy'][i]*3.6 , df['vz'][i]*3.6
 
@@ -89,10 +88,25 @@ class Doppler:
             {list} -- a list of available satelites
         """
         obs_names = list(sats_obs.loc[2081, t].index)
+
+        # print(obs_names)
+
+        # print([s.name for s in sats])
+
+        # print()
+
+        # print(t)
+
         available_sats = list()
+        min_toe = np.min([s.toe for s in sats])
+
+        # print(min_toe)
+
+        # exit()
+
+
 
         for s in sats:
-
             if(t <= s.toe + 2*60*60 and t >= s.toe and s.name in obs_names):
                 available_sats.append(s)
 
@@ -117,24 +131,9 @@ class Doppler:
 
         D_i = np.array([obs.loc[s.name].doppler for s in sats[:3]])
 
-        # print(D_i)
-
-
-        # print("PARAMETERS :")
-        # print('t:            ', t)
-        # print('Dopplers  (hetz? kHz ?)    ', np.array(D_i))
-        # print('f_ti    (hetz? kHz ?)      ',f_ti)
-
-
         a1 = (sats[0].get_pos(t)[:3]*10**3 - ru)/(np.linalg.norm(sats[0].get_pos(t)[:3]*10**3 - ru))
         a2 = (sats[1].get_pos(t)[:3]*10**3 - ru)/(np.linalg.norm(sats[1].get_pos(t)[:3]*10**3 - ru))
         a3 = (sats[2].get_pos(t)[:3]*10**3 - ru)/(np.linalg.norm(sats[2].get_pos(t)[:3]*10**3 - ru))
-
-        # print("a position (m)   ", np.linalg.norm(sats[0].get_pos(t)[:3]))
-        # print('a velocity (m/s)   ', np.linalg.norm(sats[0].get_pos(t)[3:]))
-        # print('ru (m)', np.array(ru))
-        
-        # print()
 
         k1 = self.get_k(D_i[0], f_ti[0], np.array(sats[0].get_pos(t)[3:]), a1, sats[0].clock_drift, sats[0].observation_error )
         k2 = self.get_k(D_i[1], f_ti[1], np.array(sats[1].get_pos(t)[3:]), a2, sats[1].clock_drift, sats[1].observation_error )
@@ -162,26 +161,29 @@ class Doppler:
         
         sats = parse_nav_file(nav_file_location)
 
-        user_positions = parse_positions(position_file_location).set_index(["gps_sec_of_week"])
+        # user_positions = parse_positions(position_file_location).set_index(["gps_sec_of_week"])
 
-        user_positions = user_positions.reset_index().drop_duplicates(subset ="gps_sec_of_week", inplace = False).set_index(["gps_sec_of_week"])
+        # user_positions = user_positions.reset_index().drop_duplicates(subset ="gps_sec_of_week", inplace = False).set_index(["gps_sec_of_week"])
 
-        user_positions.to_hdf( position_file_location+'.hdf5', key='data')
+        # user_positions.to_hdf( position_file_location+'.hdf5', key='data')
 
         user_positions = pd.read_hdf(position_file_location + '.hdf5', 'data')
 
-        sats_observation = obsToDataframeFinal(obs_file_location)   
+        # sats_observation = obsToDataframeFinal(obs_file_location)   
 
-        sats_observation.to_hdf(obs_file_location + '.hdf5', key='data')
+        # sats_observation.to_hdf(obs_file_location + '.hdf5', key='data')
 
         sats_observation = pd.read_hdf(obs_file_location + '.hdf5', 'data')
+
+        # print(user_positions.head())
+
+        # print(sats_observation.head())
 
         # Merge dataframes with the GPS_time_of_week indexes
 
         sats_observation = sats_observation.reset_index().rename(columns={"second_of_week":'gps_sec_of_week'}).set_index(['gps_sec_of_week'])
 
-
-        user_positions = user_positions.merge(sats_observation, left_index=True, right_index=True).reset_index().set_index(['n_week','gps_sec_of_week', 'name'])        
+        user_positions = user_positions.merge(sats_observation, left_index=True, right_index=True).reset_index().set_index(['n_week','gps_sec_of_week', 'name']) 
 
         time = list(user_positions.index.get_level_values(1))
 
@@ -192,12 +194,10 @@ class Doppler:
         for t in tqdm(time) : 
             tmp_sats = self.get_available_satelites(t, sats, user_positions)
             
-            try:
-                ru = user_positions.loc[2081,int(t)]
-            except Exception :
-                continue
-                        
+            ru = [user_positions.loc[2081,int(t)].iloc[0].x, user_positions.loc[2081,int(t)].iloc[0].y, user_positions.loc[2081,int(t)].iloc[0].z ]         
+                
             if len(tmp_sats) >= 5: 
+
                 tmp_sats = self.best_satelites(t, tmp_sats, ru)
             else:
                 continue
@@ -205,12 +205,16 @@ class Doppler:
             if len(tmp_sats) < 5:
                 continue
 
+
             vs.append(np.linalg.norm(self.speed_for_the_win(t, ru, tmp_sats, user_positions)))
 
             try:
                 true_velocity.append(np.linalg.norm([ru -user_positions.loc[t-1]]) * 3.6 )
             except Exception:
-                true_velocity.append(true_velocity[-1])
+                if(len(true_velocity)>0):
+                    true_velocity.append(true_velocity[-1])
+                else:
+                    true_velocity.append(0)
             
 
             time_vel.append(t)
@@ -234,24 +238,25 @@ class Doppler:
         
         sats = parse_nav_file(nav_file_location)
 
-        user_positions = parse_positions(position_file_location).set_index(["gps_sec_of_week"])
+        # user_positions = parse_positions(position_file_location).set_index(["gps_sec_of_week"])
 
-        user_positions = user_positions.reset_index().drop_duplicates(subset ="gps_sec_of_week", inplace = False).set_index(["gps_sec_of_week"])
+        # user_positions = user_positions.reset_index().drop_duplicates(subset ="gps_sec_of_week", inplace = False).set_index(["gps_sec_of_week"])
 
-        user_positions.to_hdf( position_file_location+'.hdf5', key='data')
+        # user_positions.to_hdf( position_file_location+'.hdf5', key='data')
 
         user_positions = pd.read_hdf(position_file_location + '.hdf5', 'data')
 
-        sats_observation = obsToDataframeFinal(obs_file_location)   
+        # sats_observation = obsToDataframeFinal(obs_file_location)   
 
-        sats_observation.to_hdf(obs_file_location + '.hdf5', key='data')
+        # sats_observation.to_hdf(obs_file_location + '.hdf5', key='data')
 
         sats_observation = pd.read_hdf(obs_file_location + '.hdf5', 'data')
 
-        # print(user_positions)
-        # exit()
+        sats_observation = sats_observation.reset_index().rename(columns={"second_of_week":'gps_sec_of_week'}).set_index(['gps_sec_of_week'])
 
-        time = list(sats_observation.index.get_level_values(1))
+        user_positions = user_positions.merge(sats_observation, left_index=True, right_index=True).reset_index().set_index(['n_week','gps_sec_of_week', 'name'])        
+
+        time = list(user_positions.index.get_level_values(1))
 
         vs = list()
         true_velocity = list()
@@ -280,7 +285,7 @@ class Doppler:
             # return
             # tdcp = TDCP()
             # tdcp.TDCP_matlab()
-            vs.append(self.get_usr_velocity( t, ru, tmp_sats, sats_observation, [1.57542*10**9] * 3)) ##############
+            vs.append(self.get_usr_velocity( t, ru, tmp_sats, sats_observation, [1.57542*10**9] * 3)) 
 
             # print(t, " " ,[t_s.name for t_s in tmp_sats[:3]])
             # print()
@@ -307,7 +312,7 @@ class Doppler:
     def best_satelites(self, t:int, sats:list, user_position:np.ndarray):
 
         if(len(sats) == 5):
-            return sats
+            return sats     
 
         spheric_coordonate = np.array([s.point_satelite_angles(user_position, t) for s in sats])
 
@@ -356,7 +361,7 @@ class Doppler:
 
         # positions.to_hdf("positions.hdf5", key="data")
 
-        positions = pd.read_hdf("data/Very_Bad_Trip/Belgique/autoroute_plus_tunnel.pos.hdf5", "data")
+        positions = pd.read_hdf("test_data/autoroute_plus_tunnel.pos.hdf5", "data")
 
         # ru = np.array([4043547.78553915, 254207.686387644, 4909623.02474359])
 
@@ -366,7 +371,9 @@ class Doppler:
 
         # sats_obs.to_hdf("test_data/satelites_observation.hdf5", key='data')
 
-        sats_obs = pd.read_hdf("data/Very_Bad_Trip/Belgique/satelites_observation.hdf5", 'data')
+        sats_obs = pd.read_hdf("test_data/satelites_observation.hdf5", 'data')
+
+        
 
         sats_obs = sats_obs.reset_index()
 
@@ -378,24 +385,23 @@ class Doppler:
 
         sats = self.best_satelites(time_, sats, ru)
 
+        # self.visualize(ru, sats,time_)
+
         v = self.speed_for_the_win(time_, ru, sats, sats_obs)
 
         print('v1', np.linalg.norm(v[:3]))
 
         print(v)
         
+        self.draw_velocity_evolution('test_data/autoroute_plus_tunnel.pos', 
+        'test_data/autoroute_plus_tunnel.nav', 
+        'test_data/autoroute_plus_tunnel.obs')
 
 
-        self.draw_velocity_evolution_TDCP('data/Very_Bad_Trip/Belgique/autoroute_plus_tunnel.pos', 
-        'data/Very_Bad_Trip/Belgique/autoroute_plus_tunnel.nav', 
-        'data/Very_Bad_Trip/Belgique/autoroute_plus_tunnel.obs' )
-
-
-        # print(v)
 
 
 if __name__ == "__main__":
-    sats = parse_nav_file("data/Very_Bad_Trip/Belgique/autoroute_plus_tunnel.nav")
+    sats = parse_nav_file("test_data/autoroute_plus_tunnel.nav")
 
     doppler = Doppler() 
 
