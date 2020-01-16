@@ -94,7 +94,7 @@ class Doppler:
 
         for s in sats:
 
-            if(t <= s.toe * 2*60*60 and t >= s.toe and s.name in obs_names):
+            if(t <= s.toe + 2*60*60 and t >= s.toe and s.name in obs_names):
                 available_sats.append(s)
 
 
@@ -147,7 +147,7 @@ class Doppler:
 
         v = np.dot(np.linalg.inv(M), K)
 
-        return np.linalg.norm(v)*3.6 - 2500
+        return np.linalg.norm(v)*3.6
     
 
     
@@ -177,40 +177,36 @@ class Doppler:
 
         sats_observation = pd.read_hdf(obs_file_location + '.hdf5', 'data')
 
-        # print(user_positions)
-        # exit()
+        # Merge dataframes with the GPS_time_of_week indexes
 
-        time = list(sats_observation.index.get_level_values(1)[17000:])
+        sats_observation = sats_observation.reset_index().rename(columns={"second_of_week":'gps_sec_of_week'}).set_index(['gps_sec_of_week'])
+
+
+        user_positions = user_positions.merge(sats_observation, left_index=True, right_index=True).reset_index().set_index(['n_week','gps_sec_of_week', 'name'])        
+
+        time = list(user_positions.index.get_level_values(1))
 
         vs = list()
         true_velocity = list()
         time_vel= list()
 
         for t in tqdm(time) : 
-            tmp_sats = self.get_available_satelites(t, sats, sats_observation)
+            tmp_sats = self.get_available_satelites(t, sats, user_positions)
             
             try:
-                ru = user_positions.loc[int(t)]
+                ru = user_positions.loc[2081,int(t)]
             except Exception :
                 continue
-            
-
-            if len(tmp_sats) < 3:
-                continue
-            
-            if len(tmp_sats) > 3: 
+                        
+            if len(tmp_sats) >= 5: 
                 tmp_sats = self.best_satelites(t, tmp_sats, ru)
             else:
                 continue
 
+            if len(tmp_sats) < 5:
+                continue
 
-            # print(list(sats_observation.index.get_level_values(1)).index(t))
-            # return
-
-            vs.append(self.get_usr_velocity( t, ru, tmp_sats, sats_observation, [1.57542*10**9] * 3))
-
-            # print(t, " " ,[t_s.name for t_s in tmp_sats[:3]])
-            # print()
+            vs.append(np.linalg.norm(self.speed_for_the_win(t, ru, tmp_sats, user_positions)))
 
             try:
                 true_velocity.append(np.linalg.norm([ru -user_positions.loc[t-1]]) * 3.6 )
@@ -233,6 +229,9 @@ class Doppler:
 
     def best_satelites(self, t:int, sats:list, user_position:np.ndarray):
 
+        if(len(sats) == 5):
+            return sats
+
         spheric_coordonate = np.array([s.point_satelite_angles(user_position, t) for s in sats])
 
         names = [s.name for s in sats]
@@ -241,36 +240,35 @@ class Doppler:
 
         best_names = list(satelite_dataframe.index)
 
-        best_names = [best_names[0], 
-                     best_names[int(len(best_names)/2 -1)], 
-                     best_names[-1]]
+        best_names = [ best_names[i] for i in range(0, len(best_names), 2 ) ]
 
         best_satelites = list(filter(lambda s: s.name in best_names, sats))
- 
+
         return best_satelites
         
 
     def compute_di(self,pseudo_rage_rate:float, vi, ai):
-        return -pseudo_rage_rate + np.dot(vi, ai)
+        return -pseudo_rage_rate  + np.dot(vi, ai)
 
 
     def speed_for_the_win(self, t:float, user_position:np.ndarray, sats:list, observation_dataframe:pd.DataFrame):
 
-
-        # a1 = (sats[0].get_pos(t)[:3]*10**3 - ru)/(np.linalg.norm(sats[0].get_pos(t)[:3]*10**3 - ru))
-
-        ai = [(sats[i].get_pos(t)[:3]*10**3 - user_position)/(np.linalg.norm(sats[i].get_pos(t)[:3]*10**3 - user_position)) for i in range(3) ]
+        ai = [(sats[i].get_pos(t)[:3] - user_position) / (np.linalg.norm(sats[i].get_pos(t)[:3] - user_position)) for i in range(5) ]
 
         ai = np.array(ai)
 
+        usr_sat_dist = np.array([np.linalg.norm( sats[i].get_pos(t)[:3] - user_position ) for i in range(5) ])
 
-        print("ai:", ai)
+        di = np.array([ self.compute_di(observation_dataframe.loc[2081, t, sats[i].name].pseudo_range - usr_sat_dist[i], sats[i].get_pos(t)[3:], ai[i] ) for i in range(5)])
+
+        W = np.array([[ ai[i][0], ai[i][1], ai[i][2], -3.00*10**8, -1 ] for i in range(5)])
+
+        res = np.linalg.lstsq(W, di, rcond=-1)[0]
 
 
 
-        di = [ self.compute_di(observation_dataframe.loc[2081, t,sats[i].name].pseudo_range, sats[i].get_pos(t)[3:], ai[i] ) for i in range(3)]
+        return res
 
-        pass
 
     def test_velocity(self):
 
@@ -301,15 +299,17 @@ class Doppler:
 
         sats_obs =sats_obs.set_index(["n_week", "second_of_week", "name"])
 
-        # print(sats_obs.loc[2081, time_])
-
         sats = self.get_available_satelites(time_, self.sats, sats_obs)
 
+        sats = self.best_satelites(time_, sats, ru)
 
-        self.speed_for_the_win(time_, ru, sats, sats_obs)
+        v = self.speed_for_the_win(time_, ru, sats, sats_obs)
+
+        print('v1', np.linalg.norm(v[:3]))
+
+        print(v)
         
 
-        # print('ground truth', np.linalg.norm(real_velocity) * 3.6)
 
         # self.draw_velocity_evolution('test_data/autoroute_plus_tunnel.pos', 
         # 'test_data/autoroute_plus_tunnel.nav', 
@@ -329,6 +329,8 @@ if __name__ == "__main__":
     # doppler = Doppler()
     # doppler.draw_velocity_evolution()
     # doppler.get_usr_velocity()
+
+
 
 
 
