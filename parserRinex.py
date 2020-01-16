@@ -97,7 +97,7 @@ def posToDataframe(file):
 
 
     df=df.set_index(['n_week','second_of_week'])
-    df=df.rename(columns={"x-ecef(m)": "X" , "y-ecef(m)":"X" , "z-ecef(m)":"Z"})
+    df=df.rename(columns={"x-ecef(m)": "X" , "y-ecef(m)":"Y" , "z-ecef(m)":"Z"})
 
     return df
 

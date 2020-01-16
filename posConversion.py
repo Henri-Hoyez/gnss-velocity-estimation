@@ -10,7 +10,9 @@ def nmeaSpeed(positionFile):
     file=open(positionFile)
     compteur=0
     ligne=file.readline()
-    while(ligne!=""):
+    while(not("123500" in ligne)):
+        ligne=file.readline()
+    while(not("124000" in ligne)):
         if("$GPRMC" in ligne):
             dataLine=ligne.split(",")
             data.append(dataLine)
@@ -86,8 +88,8 @@ def velocityEstimation(positionFile):
     return velocityNorm
 
 
-myVel=velocityEstimation("autoroute_apres_midi.pos")
-nmeaVel=nmeaSpeed("autoroute_apres_midi.nmea")
+myVel=velocityEstimation("data/autoroute_apres_midi.pos")
+# nmeaVel=nmeaSpeed("data/forest_env_matin.nmea")
 # plt.subplot(3,1,1)
 # plt.plot(time2,velocityXmean)
 # plt.subplot(3,1,2)
@@ -99,11 +101,11 @@ nmeaVel=nmeaSpeed("autoroute_apres_midi.nmea")
 # plt.plot(posX,posY)
 
 # plt.subplot(2,1,2)
-time=np.linspace(0,2000,len(myVel))
-time2=np.linspace(0,2000,len(nmeaVel))
+time=np.linspace(0,300,len(myVel))
+# time2=np.linspace(0,300,len(nmeaVel))
 plt.title("Vitesse mesurée sur l'autoroute")
 plt.plot(time,myVel,label="Différence de position")
-plt.plot(time2,nmeaVel,label="Ublox")
+# plt.plot(time2,nmeaVel,label="Ublox")
 plt.xlabel("Time (s)")
 plt.ylabel("Speed (km/h)")
 plt.legend(prop={'size':12})
