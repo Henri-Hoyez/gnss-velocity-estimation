@@ -188,6 +188,7 @@ class Doppler:
         time = list(user_positions.index.get_level_values(1))
 
         vs = list()
+        doppler_v2 = list()
         true_velocity = list()
         time_vel= list()
 
@@ -207,6 +208,7 @@ class Doppler:
 
 
             vs.append(np.linalg.norm(self.speed_for_the_win(t, ru, tmp_sats, user_positions)))
+            doppler_v2.append(np.linalg.norm( self.get_usr_velocity(t,ru, tmp_sats, user_positions, [1.57542*10**9]*3 ) ))
 
             try:
                 true_velocity.append(np.linalg.norm([ru -user_positions.loc[t-1]]) * 3.6 )
@@ -219,8 +221,9 @@ class Doppler:
 
             time_vel.append(t)
 
-        plt.plot(time_vel,vs, label="Doppler")
+        plt.plot(time_vel,vs, label="Doppler second version")
         plt.plot(time_vel, true_velocity, label="Position derivative")
+        plt.plot(time_vel, doppler_v2, label='Doppler first version')
 
         plt.legend()
         plt.grid()
